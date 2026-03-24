@@ -6,6 +6,8 @@ import {
   requiresVisitorName,
   fmtScheduled,
   minDateTime,
+  toLocalDateInputValue,
+  parseLocalDateInputValue,
   SCHEDULE_PRESETS,
 } from '../hooks/useCreateRequest';
 
@@ -188,7 +190,7 @@ export function CreateModal({ user, type, initialCat, initialData, onClose, onDo
             <div className="field">
               {!form.validUntil ? (
                 <button type="button" className="temp-pass-toggle" onClick={() => form.setValidUntil(
-                  new Date(Date.now() + 7 * 86400000).toISOString().slice(0, 10)
+                  toLocalDateInputValue(new Date(Date.now() + 7 * 86400000))
                 )}>
                   <span>📅</span>
                   <span>Временный пропуск</span>
@@ -202,7 +204,7 @@ export function CreateModal({ user, type, initialCat, initialData, onClose, onDo
                   <label className="field-lbl">Действует до</label>
                   <input type="date" className="field-inp"
                     value={form.validUntil}
-                    min={new Date().toISOString().slice(0, 10)}
+                    min={toLocalDateInputValue(new Date())}
                     onChange={e => form.setValidUntil(e.target.value)}
                     autoFocus />
                   <div className="temp-pass-presets">
@@ -211,12 +213,12 @@ export function CreateModal({ user, type, initialCat, initialData, onClose, onDo
                     ].map(([label, days]) => (
                       <button key={days} type="button" className="temp-pass-preset"
                         onClick={() => form.setValidUntil(
-                          new Date(Date.now() + days * 86400000).toISOString().slice(0, 10)
+                          toLocalDateInputValue(new Date(Date.now() + days * 86400000))
                         )}>{label}</button>
                     ))}
                   </div>
                   <div style={{ fontSize: 11, color: 'var(--t4)', marginTop: 6 }}>
-                    Многоразовый вход до {new Date(form.validUntil).toLocaleDateString('ru-RU', { day: 'numeric', month: 'long', year: 'numeric' })}
+                    Многоразовый вход до {parseLocalDateInputValue(form.validUntil)?.toLocaleDateString('ru-RU', { day: 'numeric', month: 'long', year: 'numeric' })}
                   </div>
                 </div>
               )}
