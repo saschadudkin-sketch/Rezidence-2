@@ -130,6 +130,21 @@ export const canViewPerms = (user, targetUid) =>
   || isStaff(user.role)
   || user.role === ROLES.ADMIN;
 
+// ─── Доступ к экранaм (route/feature guard) ─────────────────────────────────
+
+export const ALLOWED_TABS_BY_ROLE = {
+  [ROLES.OWNER]:      ['passes', 'tech', 'perms', 'chat'],
+  [ROLES.TENANT]:     ['passes', 'tech', 'perms', 'chat'],
+  [ROLES.CONTRACTOR]: ['passes', 'tech', 'perms', 'chat'],
+  [ROLES.CONCIERGE]:  ['passes', 'visitlog', 'blacklist', 'chat'],
+  [ROLES.SECURITY]:   ['guardpost', 'passes', 'visitlog', 'blacklist', 'chat'],
+  [ROLES.ADMIN]:      ['stats', 'requests', 'users', 'visitlog', 'blacklist', 'chat'],
+};
+
+export const getTabsForRole = (role) => ALLOWED_TABS_BY_ROLE[role] || [];
+
+export const canAccessTab = (role, tab) => getTabsForRole(role).includes(tab);
+
 // ─── Флюент-интерфейс (опционально, для удобства) ────────────────────────────
 
 /**
