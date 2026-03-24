@@ -4,7 +4,8 @@ import { ROLE_LABELS, S_END } from '../../constants';
 import { genId } from '../../utils';
 import { useDebounce } from '../../hooks/useDebounce';
 import { toast } from '../../ui/Toasts';
-import { FB_MODE, savePerms } from '../../services/firebaseService';
+import { toastBySyncResult } from '../../ui/syncFeedback';
+import { services } from '../../services/providers/serviceContainer';
 
 // ─── AdminPermsItemRow ────────────────────────────────────────────────────────
 
@@ -17,7 +18,7 @@ function AdminPermsItemRow({ uid, listKey, item, onDel }) {
   const perms = usePerms(uid);
   const { setPerms } = useActions();
 
-  function save() {
+  async function save() {
     if (!name.trim()) { toast('Введите ФИО', 'error'); return; }
     const updated = {
       ...perms,
@@ -25,10 +26,9 @@ function AdminPermsItemRow({ uid, listKey, item, onDel }) {
         x.id === item.id ? { ...x, name: name.trim(), phone, carPlate } : x
       ),
     };
-    setPerms(uid, updated);
-    if (FB_MODE === 'live') savePerms(uid, updated).catch(console.warn);
+    const mode = await services.admin.savePermsEverywhere({ uid, perms: updated, saveLocal: setPerms });
     setEditing(false);
-    toast('Запись обновлена', 'success');
+    toastBySyncResult(mode, 'Запись обновлена', 'Запись сохранена локально. Синхронизация будет повторена позже');
   }
 
   function handleCancel() { setEditing(false); }
@@ -81,28 +81,25 @@ function AdminPermsAptGroup({ u, tab }) {
   const { setPerms } = useActions();
   const list = perms[tab] || [];
 
-  function addItem() {
+  async function addItem() {
     if (!form.name.trim()) { toast('Введите ФИО', 'error'); return; }
     const updated = { ...perms, [tab]: [...list, { id: genId('p'), ...form, name: form.name.trim() }] };
-    setPerms(u.uid, updated);
-    if (FB_MODE === 'live') savePerms(u.uid, updated).catch(console.warn);
+    const mode = await services.admin.savePermsEverywhere({ uid: u.uid, perms: updated, saveLocal: setPerms });
     setForm({ name: '', phone: '', carPlate: '' });
     setAdding(false);
-    toast('Запись добавлена', 'success');
+    toastBySyncResult(mode, 'Запись добавлена', 'Запись сохранена локально. Синхронизация будет повторена позже');
   }
 
-  function delItem(id) {
+  async function delItem(id) {
     const updated = { ...perms, [tab]: list.filter(x => x.id !== id) };
-    setPerms(u.uid, updated);
-    if (FB_MODE === 'live') savePerms(u.uid, updated).catch(console.warn);
-    toast('Запись удалена', 'success');
+    const mode = await services.admin.savePermsEverywhere({ uid: u.uid, perms: updated, saveLocal: setPerms });
+    toastBySyncResult(mode, 'Запись удалена', 'Изменения сохранены локально. Синхронизация будет повторена позже');
   }
 
-  function clearAll() {
+  async function clearAll() {
     const updated = { ...perms, [tab]: [] };
-    setPerms(u.uid, updated);
-    if (FB_MODE === 'live') savePerms(u.uid, updated).catch(console.warn);
-    toast('Список очищен', 'success');
+    const mode = await services.admin.savePermsEverywhere({ uid: u.uid, perms: updated, saveLocal: setPerms });
+    toastBySyncResult(mode, 'Список очищен', 'Изменения сохранены локально. Синхронизация будет повторена позже');
   }
 
   function handleCancelAdd() {

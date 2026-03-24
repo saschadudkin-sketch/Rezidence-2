@@ -15,6 +15,11 @@ import {
   arriveWithHistory,
   approveAndArriveWithHistory,
 } from '../domain/requestWorkflow';
+import {
+  REQUEST_SET_STATUS,
+  REQUEST_ARRIVE,
+  HISTORY_ADD,
+} from './requestActionTypes';
 
 import { requestsReducer, INITIAL_REQUESTS, INITIAL_HISTORY }                           from './slices/requestsSlice';
 import { chatReducer,     INITIAL_CHAT,     INITIAL_CHAT_LAST_SEEN }                    from './slices/chatSlice';
@@ -26,9 +31,9 @@ import { blacklistReducer, INITIAL_BLACKLIST }                                  
 
 export const A = {
   REQUEST_ADD: 'REQUEST_ADD', REQUEST_UPDATE: 'REQUEST_UPDATE', REQUEST_DELETE: 'REQUEST_DELETE',
-  REQUEST_SET_STATUS: 'REQUEST_SET_STATUS', REQUEST_ARRIVE: 'REQUEST_ARRIVE',
+  REQUEST_SET_STATUS, REQUEST_ARRIVE,
   REQUESTS_SET_ALL: 'REQUESTS_SET_ALL', REQUEST_ACTIVATE_SCHEDULED: 'REQUEST_ACTIVATE_SCHEDULED',
-  HISTORY_ADD: 'HISTORY_ADD',
+  HISTORY_ADD,
   CHAT_SEND: 'CHAT_SEND', CHAT_SET_ALL: 'CHAT_SET_ALL', CHAT_MARK_SEEN: 'CHAT_MARK_SEEN',
   CHAT_UPDATE_MESSAGE: 'CHAT_UPDATE_MESSAGE', CHAT_DELETE_MESSAGE: 'CHAT_DELETE_MESSAGE',
   USER_ADD: 'USER_ADD', USER_UPDATE: 'USER_UPDATE', USER_DELETE: 'USER_DELETE', USERS_SET_ALL: 'USERS_SET_ALL',

@@ -1,10 +1,9 @@
 import { useState, useEffect } from 'react';
 import { useActions } from '../store/AppStore.jsx';
 import { CAT_ICON, CAT_LABEL } from '../constants/index.js';
-import { toast } from '../ui/Toasts.jsx';
+import { toastBySyncResult } from '../ui/syncFeedback';
 import { lockScroll, unlockScroll } from '../ui/scrollLock.js';
-
-import { FB_MODE, updateRequest as fbUpdateReq } from '../services/firebaseService';
+import { services } from '../services/providers/serviceContainer';
 
 
 export function EditRequestModal({ req, onClose, onDone }) {
@@ -29,10 +28,9 @@ export function EditRequestModal({ req, onClose, onDone }) {
       carPlate:     carPlate.trim() || null,
       comment:      comment.trim(),
     };
-    updateRequest(req.id, patch);
-    if (FB_MODE === 'live') fbUpdateReq(req.id, patch).catch(console.warn);
+    const mode = await services.requests.updateEverywhere({ requestId: req.id, patch, updateLocal: updateRequest });
     setLoading(false);
-    toast('Заявка обновлена', 'success');
+    toastBySyncResult(mode, 'Заявка обновлена', 'Изменения сохранены локально. Синхронизация будет повторена позже');
     onDone(); onClose();
   };
 
