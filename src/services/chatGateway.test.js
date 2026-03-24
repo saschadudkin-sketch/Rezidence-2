@@ -11,8 +11,15 @@ import { sendMessage as fbSendMessage } from './firebaseService';
 import { sendChatMessage } from './chatGateway';
 
 describe('chatGateway.sendChatMessage', () => {
+  let warnSpy;
+
   beforeEach(() => {
     jest.clearAllMocks();
+    warnSpy = jest.spyOn(console, 'warn').mockImplementation(() => {});
+  });
+
+  afterEach(() => {
+    warnSpy.mockRestore();
   });
 
   test('demo mode sends locally', async () => {
@@ -59,5 +66,6 @@ describe('chatGateway.sendChatMessage', () => {
 
     expect(mode).toBe('local');
     expect(sendLocal).toHaveBeenCalledTimes(1);
+    expect(console.warn).toHaveBeenCalledTimes(1);
   });
 });
