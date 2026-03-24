@@ -67,10 +67,15 @@ export const toLocalDateTimeInputValue = (date) => {
 };
 
 export const parseLocalDateInputValue = (value) => {
-  if (!value) return null;
-  const [year, month, day] = String(value).split('-').map(Number);
-  if (!year || !month || !day) return null;
-  return new Date(year, month - 1, day);
+  if (typeof value !== 'string' || !/^\d{4}-\d{2}-\d{2}$/.test(value)) return null;
+  const [year, month, day] = value.split('-').map(Number);
+  const parsed = new Date(year, month - 1, day);
+  if (
+    parsed.getFullYear() !== year ||
+    parsed.getMonth() !== month - 1 ||
+    parsed.getDate() !== day
+  ) return null;
+  return parsed;
 };
 
 export const minDateTime = () => {
@@ -211,6 +216,12 @@ export function useCreateRequest({ user, type, initialCat, initialData, onClose,
 
     const schedDate   = showSchedule && scheduledFor ? new Date(scheduledFor) : null;
     const isScheduled = Boolean(schedDate && schedDate > new Date());
+    const parsedValidUntil = type === 'pass' && validUntil ? parseLocalDateInputValue(validUntil) : null;
+    if (type === 'pass' && validUntil && !parsedValidUntil) {
+      setLoading(false);
+      toast('Некорректная дата действия пропуска', 'error');
+      return;
+    }
 
     const newReq = {
       id:            genId('r'),
@@ -229,7 +240,7 @@ export function useCreateRequest({ user, type, initialCat, initialData, onClose,
       comment:       comment.trim(),
       priority:      'normal',
       passDuration:  type === 'pass' ? (validUntil ? 'temporary' : 'once') : null,
-      validUntil:    type === 'pass' && validUntil ? parseLocalDateInputValue(validUntil) : null,
+      validUntil:    parsedValidUntil,
       photo:         null,
       photos:        [],
       status:        isScheduled ? 'scheduled' : 'pending',

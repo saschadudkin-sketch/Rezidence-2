@@ -22,4 +22,10 @@ describe('useCreateRequest date input formatting helpers', () => {
     expect(d.getMonth()).toBe(2);
     expect(d.getDate()).toBe(24);
   });
+
+  test('parseLocalDateInputValue returns null for invalid or out-of-range values', () => {
+    expect(parseLocalDateInputValue('2026-02-31')).toBeNull();
+    expect(parseLocalDateInputValue('2026-2-3')).toBeNull();
+    expect(parseLocalDateInputValue('not-a-date')).toBeNull();
+  });
 });
