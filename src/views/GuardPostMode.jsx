@@ -228,7 +228,7 @@ function TempPassCard({ req, userName, residentPhone, blacklist }) {
 // ─── Карточка техзаявки ─────────────────────────────────────────────────────
 
 function TechCard({ req, userName, residentPhone }) {
-  const { acceptRequest, approveRequest } = useActions();
+  const { acceptRequest } = useActions();
   const avData = useAvatar(req.createdByUid);
   const [loading, setLoading] = useState(null);
 

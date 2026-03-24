@@ -3,7 +3,8 @@ import { useActions } from '../../store/AppStore';
 import { STS_LABEL, S_END } from '../../constants';
 import { ReqCard } from '../../requests/ReqCard';
 import { toast } from '../../ui/Toasts';
-import { FB_MODE, deleteRequest as fbDeleteRequest, updateRequest as fbUpdateRequest } from '../../services/firebaseService';
+import { toastBySyncResult } from '../../ui/syncFeedback';
+import { services } from '../../services/providers/serviceContainer';
 
 export default function AdminReqRow({ r }) {
   const [editing, setEditing] = useState(false);
@@ -11,17 +12,15 @@ export default function AdminReqRow({ r }) {
   const [status,  setStatus]  = useState(r.status);
   const { deleteRequest, updateRequest } = useActions();
 
-  function del() {
-    deleteRequest(r.id);
-    if (FB_MODE === 'live') fbDeleteRequest(r.id).catch(console.warn);
-    toast('Заявка удалена', 'success');
+  async function del() {
+    const mode = await services.requests.deleteEverywhere({ requestId: r.id, deleteLocal: deleteRequest });
+    toastBySyncResult(mode, 'Заявка удалена', 'Удаление выполнено локально. Синхронизация будет повторена позже');
   }
 
-  function save() {
-    updateRequest(r.id, { comment, status });
-    if (FB_MODE === 'live') fbUpdateRequest(r.id, { comment, status }).catch(console.warn);
+  async function save() {
+    const mode = await services.requests.updateEverywhere({ requestId: r.id, patch: { comment, status }, updateLocal: updateRequest });
     setEditing(false);
-    toast('Заявка обновлена', 'success');
+    toastBySyncResult(mode, 'Заявка обновлена', 'Изменения сохранены локально. Синхронизация будет повторена позже');
   }
 
   function handleCancel() { setEditing(false); }

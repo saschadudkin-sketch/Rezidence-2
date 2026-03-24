@@ -13,11 +13,8 @@ import ErrorBoundary from '../ui/ErrorBoundary';
 import ResidentView from './ResidentView';
 import { ConciergeView, SecurityView } from './SecurityConciergeViews';
 import { LOGO } from '../constants/logo';
-import {
-  FB_MODE,
-  subscribeRequests, subscribeChat,
-  fetchAllUsers, fetchPerms, fetchTemplates,
-} from '../services/firebaseService';
+import { isLiveMode, isDemoMode } from '../config/runtimeMode';
+import { services } from '../services/providers/serviceContainer';
 
 const AdminView = lazy(() => import('./AdminView'));
 
@@ -106,7 +103,7 @@ export default function Dashboard({ user, onLogout }) {
   // ── Push-уведомления (demo) ───────────────────────────────────────────────
   const notifTimer = useRef(null);
   useEffect(() => {
-    if (FB_MODE === 'live') return;
+    if (isLiveMode()) return;
     // Debounce 300ms — если несколько заявок создаются быстро, уведомляем один раз
     clearTimeout(notifTimer.current);
     notifTimer.current = setTimeout(() => {
@@ -148,29 +145,32 @@ export default function Dashboard({ user, onLogout }) {
 
   // ── Firebase live subscriptions ───────────────────────────────────────────
   useEffect(() => {
-    if (FB_MODE !== 'live') return;
-    const unsubReqs = subscribeRequests(docs => {
-      const newP = docs.filter(r => r.type === 'pass' && r.status === 'pending').length;
-      if (newP > prevPendingP.current && user.role === ROLES.SECURITY) { sendNotif('Новый пропуск', 'Требует рассмотрения', 'pass'); playAlert('pass'); }
-      prevPendingP.current = newP;
-      const newT = docs.filter(r => r.type === 'tech' && r.status === 'pending').length;
-      if (newT > prevPendingT.current && canManageRequests(user.role)) { sendNotif('Техзаявка', 'Новая заявка в техслужбу', 'tech'); playAlert('tech'); }
-      prevPendingT.current = newT;
-      setAllRequests(docs);
+    if (!isLiveMode()) return;
+    const stop = services.liveData.startSync({
+      userUid: user.uid,
+      onRequests: (docs) => {
+        const newP = docs.filter(r => r.type === 'pass' && r.status === 'pending').length;
+        if (newP > prevPendingP.current && user.role === ROLES.SECURITY) { sendNotif('Новый пропуск', 'Требует рассмотрения', 'pass'); playAlert('pass'); }
+        prevPendingP.current = newP;
+        const newT = docs.filter(r => r.type === 'tech' && r.status === 'pending').length;
+        if (newT > prevPendingT.current && canManageRequests(user.role)) { sendNotif('Техзаявка', 'Новая заявка в техслужбу', 'tech'); playAlert('tech'); }
+        prevPendingT.current = newT;
+        setAllRequests(docs);
+      },
+      onChat: (docs) => {
+        const newM = docs.length;
+        if (newM > prevMsgs.current) {
+          const last = docs[docs.length - 1];
+          if (last && last.uid !== user.uid) sendNotif('Сообщение от ' + last.name, last.text.slice(0, 60), 'chat');
+          prevMsgs.current = newM;
+        }
+        setAllMessages(docs);
+      },
+      onUsers: setAllUsers,
+      onPerms: (p) => setPerms(user.uid, p),
+      onTemplates: (items) => setTemplates(user.uid, items),
     });
-    const unsubChat = subscribeChat(docs => {
-      const newM = docs.length;
-      if (newM > prevMsgs.current) {
-        const last = docs[docs.length - 1];
-        if (last && last.uid !== user.uid) sendNotif('Сообщение от ' + last.name, last.text.slice(0, 60), 'chat');
-        prevMsgs.current = newM;
-      }
-      setAllMessages(docs);
-    });
-    fetchAllUsers().then(u => { if (u.length) setAllUsers(u); }).catch(() => {});
-    fetchPerms(user.uid).then(p => setPerms(user.uid, p)).catch(() => {});
-    fetchTemplates(user.uid).then(items => setTemplates(user.uid, items)).catch(() => {});
-    return () => { unsubReqs(); unsubChat(); };
+    return stop;
   }, [user.role, user.uid, setAllRequests, setAllMessages, setAllUsers, setPerms, setTemplates]);
 
   // ── Навигация ─────────────────────────────────────────────────────────────
@@ -204,7 +204,7 @@ export default function Dashboard({ user, onLogout }) {
             <div className="header-brand">
               <img src={LOGO} alt="" className="header-logo" />
               <span className="header-wordmark">Резиденции Замоскворечья</span>
-              {FB_MODE === 'demo' && <span className="demo-badge">DEMO</span>}
+              {isDemoMode() && <span className="demo-badge">DEMO</span>}
             </div>
             <div style={{ display: 'flex', alignItems: 'center', gap: 8, flex: 1, justifyContent: 'flex-end' }}>
               <button className="theme-btn" onClick={cycleTheme} title="Переключить тему" aria-label={'Тема: ' + themeLabel}>
