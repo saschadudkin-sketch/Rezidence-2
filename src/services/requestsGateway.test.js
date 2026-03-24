@@ -10,6 +10,7 @@ jest.mock('./firebaseService', () => ({
 }));
 
 import { isLiveMode } from '../config/runtimeMode';
+import { SYNC_STATUS } from '../constants/syncStatuses';
 import { createRequest, uploadRequestPhoto, updateRequest, deleteRequest } from './firebaseService';
 import { resolveRequestPhotos, submitRequest, updateRequestEverywhere, deleteRequestEverywhere } from './requestsGateway';
 
@@ -51,7 +52,7 @@ describe('requestsGateway', () => {
 
     const mode = await submitRequest({ request: { id: 'r3' }, addLocal });
 
-    expect(mode).toBe('remote');
+    expect(mode).toBe(SYNC_STATUS.REMOTE);
     expect(createRequest).toHaveBeenCalledTimes(1);
     expect(addLocal).not.toHaveBeenCalled();
   });
@@ -63,7 +64,7 @@ describe('requestsGateway', () => {
 
     const mode = await submitRequest({ request: { id: 'r3f' }, addLocal });
 
-    expect(mode).toBe('local_fallback');
+    expect(mode).toBe(SYNC_STATUS.LOCAL_FALLBACK);
     expect(addLocal).toHaveBeenCalledWith({ id: 'r3f' });
   });
 
@@ -73,7 +74,7 @@ describe('requestsGateway', () => {
 
     const mode = await submitRequest({ request: { id: 'r4' }, addLocal });
 
-    expect(mode).toBe('local');
+    expect(mode).toBe(SYNC_STATUS.LOCAL);
     expect(addLocal).toHaveBeenCalledTimes(1);
   });
 
@@ -83,7 +84,7 @@ describe('requestsGateway', () => {
 
     const mode = await updateRequestEverywhere({ requestId: 'r5', patch: { comment: 'x' }, updateLocal });
 
-    expect(mode).toBe('local');
+    expect(mode).toBe(SYNC_STATUS.LOCAL);
     expect(updateLocal).toHaveBeenCalledWith('r5', { comment: 'x' });
     expect(updateRequest).not.toHaveBeenCalled();
   });
@@ -95,9 +96,20 @@ describe('requestsGateway', () => {
 
     const mode = await updateRequestEverywhere({ requestId: 'r6', patch: { comment: 'y' }, updateLocal });
 
-    expect(mode).toBe('remote');
+    expect(mode).toBe(SYNC_STATUS.REMOTE);
     expect(updateLocal).toHaveBeenCalledWith('r6', { comment: 'y' });
     expect(updateRequest).toHaveBeenCalledWith('r6', { comment: 'y' });
+  });
+
+  test('updateRequestEverywhere falls back to local when remote update fails', async () => {
+    isLiveMode.mockReturnValue(true);
+    const updateLocal = jest.fn();
+    updateRequest.mockRejectedValueOnce(new Error('offline'));
+
+    const mode = await updateRequestEverywhere({ requestId: 'r6f', patch: { comment: 'y' }, updateLocal });
+
+    expect(mode).toBe(SYNC_STATUS.LOCAL_FALLBACK);
+    expect(updateLocal).toHaveBeenCalledWith('r6f', { comment: 'y' });
   });
 
   test('deleteRequestEverywhere removes local only in demo mode', async () => {
@@ -106,7 +118,7 @@ describe('requestsGateway', () => {
 
     const mode = await deleteRequestEverywhere({ requestId: 'r7', deleteLocal });
 
-    expect(mode).toBe('local');
+    expect(mode).toBe(SYNC_STATUS.LOCAL);
     expect(deleteLocal).toHaveBeenCalledWith('r7');
     expect(deleteRequest).not.toHaveBeenCalled();
   });
@@ -118,8 +130,19 @@ describe('requestsGateway', () => {
 
     const mode = await deleteRequestEverywhere({ requestId: 'r8', deleteLocal });
 
-    expect(mode).toBe('remote');
+    expect(mode).toBe(SYNC_STATUS.REMOTE);
     expect(deleteLocal).toHaveBeenCalledWith('r8');
     expect(deleteRequest).toHaveBeenCalledWith('r8');
+  });
+
+  test('deleteRequestEverywhere falls back to local when remote delete fails', async () => {
+    isLiveMode.mockReturnValue(true);
+    const deleteLocal = jest.fn();
+    deleteRequest.mockRejectedValueOnce(new Error('offline'));
+
+    const mode = await deleteRequestEverywhere({ requestId: 'r8f', deleteLocal });
+
+    expect(mode).toBe(SYNC_STATUS.LOCAL_FALLBACK);
+    expect(deleteLocal).toHaveBeenCalledWith('r8f');
   });
 });

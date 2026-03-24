@@ -7,6 +7,7 @@ jest.mock('./firebaseService', () => ({
 }));
 
 import { isLiveMode } from '../config/runtimeMode';
+import { SYNC_STATUS } from '../constants/syncStatuses';
 import { sendMessage as fbSendMessage } from './firebaseService';
 import { sendChatMessage } from './chatGateway';
 
@@ -32,7 +33,7 @@ describe('chatGateway.sendChatMessage', () => {
       sendLocal,
     });
 
-    expect(mode).toBe('local');
+    expect(mode).toBe(SYNC_STATUS.LOCAL);
     expect(sendLocal).toHaveBeenCalledTimes(1);
     expect(fbSendMessage).not.toHaveBeenCalled();
   });
@@ -48,7 +49,7 @@ describe('chatGateway.sendChatMessage', () => {
       sendLocal,
     });
 
-    expect(mode).toBe('remote');
+    expect(mode).toBe(SYNC_STATUS.REMOTE);
     expect(fbSendMessage).toHaveBeenCalledTimes(1);
     expect(sendLocal).not.toHaveBeenCalled();
   });
@@ -64,7 +65,7 @@ describe('chatGateway.sendChatMessage', () => {
       sendLocal,
     });
 
-    expect(mode).toBe('local');
+    expect(mode).toBe(SYNC_STATUS.LOCAL);
     expect(sendLocal).toHaveBeenCalledTimes(1);
     expect(console.warn).toHaveBeenCalledTimes(1);
   });
