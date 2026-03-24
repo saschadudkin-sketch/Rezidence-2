@@ -14,7 +14,7 @@ const HINTS = [
   ['+7 495 123-00-00', 'Администратор'],
 ];
 
-export default function Login({ onLogin }) {
+export default function Login({ onLogin, onShowLanding }) {
   const [phone,     setPhone]     = useState('+7 ');
   const [otp,       setOtp]       = useState('');
   const [step,      setStep]      = useState('phone');
@@ -108,6 +108,11 @@ export default function Login({ onLogin }) {
               <button className="btn-gold" onClick={sendCode} disabled={loading}>
                 <span>{loading ? 'Проверка...' : 'Получить SMS-код'}</span>
               </button>
+              {onShowLanding && (
+                <button className="btn-outline" onClick={onShowLanding}>
+                  О сервисе комплекса
+                </button>
+              )}
               <button className={'demo-toggle' + (demoOpen ? ' open' : '')} onClick={() => setDemoOpen(o => !o)}>
                 <span>Демо-доступ</span>
                 <span className="demo-toggle-arrow">▾</span>

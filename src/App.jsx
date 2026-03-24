@@ -1,10 +1,12 @@
 import { AppProvider } from './store/AppStore';
 import Dashboard from './views/Dashboard';
 import Login from './views/Login';
+import Landing from './views/Landing';
 import Toasts from './ui/Toasts';
 import ErrorBoundary from './ui/ErrorBoundary';
 import { useAuth, PHASE } from './hooks/useAuth';
 import { LOGO } from './constants/logo';
+import { useState } from 'react';
 
 import './styles/theme.css';
 
@@ -24,6 +26,7 @@ function LoadingScreen() {
 
 function AppInner() {
   const { phase, user, login, logout } = useAuth();
+  const [showLanding, setShowLanding] = useState(false);
 
   // Защита: если phase=dashboard но user=null — fallback на логин
   const safePhase = (phase === PHASE.DASHBOARD && !user) ? PHASE.LOGIN : phase;
@@ -33,7 +36,11 @@ function AppInner() {
       {safePhase === PHASE.LOADING && <LoadingScreen />}
       {safePhase === PHASE.LOGIN && (
         <ErrorBoundary name="Вход">
-          <Login onLogin={login} />
+          {showLanding ? (
+            <Landing onBack={() => setShowLanding(false)} />
+          ) : (
+            <Login onLogin={login} onShowLanding={() => setShowLanding(true)} />
+          )}
         </ErrorBoundary>
       )}
       {safePhase === PHASE.DASHBOARD && user && (
