@@ -3,7 +3,7 @@ import { useActions, usePerms } from '../store/AppStore.jsx';
 import { genId } from '../utils.js';
 import { toast } from '../ui/Toasts';
 import { lockScroll, unlockScroll } from '../ui/scrollLock.js';
-import { resolveRequestPhotos, submitRequest } from '../services/requestsGateway';
+import { services } from '../services/providers/serviceContainer';
 
 // ─── Предикаты категорий ─────────────────────────────────────────────────────
 
@@ -220,11 +220,11 @@ export function useCreateRequest({ user, type, initialCat, initialData, onClose,
 
     // Загрузка фото
     if (photos.length > 0) {
-      newReq.photos = await resolveRequestPhotos(newReq.id, photos);
+      newReq.photos = await services.requests.resolvePhotos(newReq.id, photos);
       newReq.photo = newReq.photos[0] || null;
     }
 
-    submitRequest({ request: newReq, addLocal: addRequest });
+    services.requests.submit({ request: newReq, addLocal: addRequest });
     setLoading(false);
 
     const successMsg = isScheduled

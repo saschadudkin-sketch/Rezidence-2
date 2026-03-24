@@ -3,7 +3,7 @@ import { useActions } from '../../store/AppStore';
 import { STS_LABEL, S_END } from '../../constants';
 import { ReqCard } from '../../requests/ReqCard';
 import { toast } from '../../ui/Toasts';
-import { updateRequestEverywhere, deleteRequestEverywhere } from '../../services/requestsGateway';
+import { services } from '../../services/providers/serviceContainer';
 
 export default function AdminReqRow({ r }) {
   const [editing, setEditing] = useState(false);
@@ -12,12 +12,12 @@ export default function AdminReqRow({ r }) {
   const { deleteRequest, updateRequest } = useActions();
 
   function del() {
-    deleteRequestEverywhere({ requestId: r.id, deleteLocal: deleteRequest });
+    services.requests.deleteEverywhere({ requestId: r.id, deleteLocal: deleteRequest });
     toast('Заявка удалена', 'success');
   }
 
   function save() {
-    updateRequestEverywhere({ requestId: r.id, patch: { comment, status }, updateLocal: updateRequest });
+    services.requests.updateEverywhere({ requestId: r.id, patch: { comment, status }, updateLocal: updateRequest });
     setEditing(false);
     toast('Заявка обновлена', 'success');
   }

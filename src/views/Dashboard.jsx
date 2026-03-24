@@ -14,7 +14,7 @@ import ResidentView from './ResidentView';
 import { ConciergeView, SecurityView } from './SecurityConciergeViews';
 import { LOGO } from '../constants/logo';
 import { isLiveMode, isDemoMode } from '../config/runtimeMode';
-import { startLiveDataSync } from '../services/liveDataGateway';
+import { services } from '../services/providers/serviceContainer';
 
 const AdminView = lazy(() => import('./AdminView'));
 
@@ -146,7 +146,7 @@ export default function Dashboard({ user, onLogout }) {
   // ── Firebase live subscriptions ───────────────────────────────────────────
   useEffect(() => {
     if (!isLiveMode()) return;
-    const stop = startLiveDataSync({
+    const stop = services.liveData.startSync({
       userUid: user.uid,
       onRequests: (docs) => {
         const newP = docs.filter(r => r.type === 'pass' && r.status === 'pending').length;

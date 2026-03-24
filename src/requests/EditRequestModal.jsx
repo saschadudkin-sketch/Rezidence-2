@@ -3,7 +3,7 @@ import { useActions } from '../store/AppStore.jsx';
 import { CAT_ICON, CAT_LABEL } from '../constants/index.js';
 import { toast } from '../ui/Toasts.jsx';
 import { lockScroll, unlockScroll } from '../ui/scrollLock.js';
-import { updateRequestEverywhere } from '../services/requestsGateway';
+import { services } from '../services/providers/serviceContainer';
 
 
 export function EditRequestModal({ req, onClose, onDone }) {
@@ -28,7 +28,7 @@ export function EditRequestModal({ req, onClose, onDone }) {
       carPlate:     carPlate.trim() || null,
       comment:      comment.trim(),
     };
-    updateRequestEverywhere({ requestId: req.id, patch, updateLocal: updateRequest });
+    services.requests.updateEverywhere({ requestId: req.id, patch, updateLocal: updateRequest });
     setLoading(false);
     toast('Заявка обновлена', 'success');
     onDone(); onClose();

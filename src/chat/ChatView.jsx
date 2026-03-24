@@ -7,7 +7,7 @@ import { fmtTime, genId } from '../utils.js';
 import { AvatarCircle } from '../ui/AvatarCircle.jsx';
 import { PhotoLightbox } from '../ui/PhotoLightbox.jsx';
 import { toast } from '../ui/Toasts.jsx';
-import { sendChatMessage } from '../services/chatGateway';
+import { services } from '../services/providers/serviceContainer';
 
 
 
@@ -149,7 +149,7 @@ export function ChatView({user}){
   const send=useCallback(()=>{
     if(!text.trim())return;
     const m={id:genId("m"),uid:user.uid,name:user.name,role:user.role,text:text.trim(),photo:null,replyTo:replyTo||null,at:new Date()};
-    sendChatMessage({
+    services.chat.sendMessage({
       remotePayload: { uid:user.uid, name:user.name, role:user.role, text:text.trim(), replyTo:replyTo||null },
       localMessage: m,
       sendLocal: sendMessage,
@@ -173,7 +173,7 @@ export function ChatView({user}){
         img.onerror=()=>resolve(dataUrl);img.src=dataUrl;
       });
       const m={id:genId("m"),uid:user.uid,name:user.name,role:user.role,text:"",photo:compressed,at:new Date()};
-      await sendChatMessage({
+      await services.chat.sendMessage({
         remotePayload: { uid:user.uid, name:user.name, role:user.role, text:"", photo:compressed },
         localMessage: m,
         sendLocal: sendMessage,
