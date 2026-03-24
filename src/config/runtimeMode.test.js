@@ -31,6 +31,19 @@ describe('runtimeMode', () => {
     expect(runtimeMode.MODE).toBe('live');
   });
 
+  test('REACT_APP_RUNTIME_MODE has priority over REACT_APP_MODE', () => {
+    process.env.REACT_APP_RUNTIME_MODE = 'demo';
+    process.env.REACT_APP_MODE = 'live';
+    const runtimeMode = require('./runtimeMode');
+    expect(runtimeMode.MODE).toBe('demo');
+  });
+
+  test('normalizes env values (trim + lowercase)', () => {
+    process.env.REACT_APP_RUNTIME_MODE = '  LIVE  ';
+    const runtimeMode = require('./runtimeMode');
+    expect(runtimeMode.MODE).toBe('live');
+  });
+
   test('ignores unsupported mode values', () => {
     process.env.REACT_APP_RUNTIME_MODE = 'staging';
     const runtimeMode = require('./runtimeMode');
