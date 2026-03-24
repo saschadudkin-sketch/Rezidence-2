@@ -3,7 +3,12 @@ jest.mock('./Toasts', () => ({
 }));
 
 import { toast } from './Toasts';
-import { notifyLocalFallback, toastBySyncResult } from './syncFeedback';
+import {
+  notifyLocalFallback,
+  toastBySyncResult,
+  DEFAULT_FALLBACK_MESSAGE,
+  DEFAULT_SUCCESS_MESSAGE,
+} from './syncFeedback';
 import { SYNC_STATUS } from '../constants/syncStatuses';
 
 describe('syncFeedback', () => {
@@ -28,7 +33,7 @@ describe('syncFeedback', () => {
 
   test('uses default message when no message is provided', () => {
     notifyLocalFallback(SYNC_STATUS.LOCAL_FALLBACK);
-    expect(toast).toHaveBeenCalledWith('Изменения сохранены локально. Синхронизация будет повторена позже', 'info');
+    expect(toast).toHaveBeenCalledWith(DEFAULT_FALLBACK_MESSAGE, 'info');
   });
 
   test('toastBySyncResult shows success message for synced result', () => {
@@ -46,7 +51,7 @@ describe('syncFeedback', () => {
   test('toastBySyncResult uses default fallback message when not provided', () => {
     const status = toastBySyncResult(SYNC_STATUS.LOCAL_FALLBACK, 'Сохранено');
     expect(status).toBe('fallback');
-    expect(toast).toHaveBeenCalledWith('Изменения сохранены локально. Синхронизация будет повторена позже', 'info');
+    expect(toast).toHaveBeenCalledWith(DEFAULT_FALLBACK_MESSAGE, 'info');
   });
 
   test.each([
@@ -61,16 +66,16 @@ describe('syncFeedback', () => {
   test('toastBySyncResult uses default success message when not provided', () => {
     const status = toastBySyncResult(SYNC_STATUS.REMOTE);
     expect(status).toBe('success');
-    expect(toast).toHaveBeenCalledWith('Операция выполнена', 'success');
+    expect(toast).toHaveBeenCalledWith(DEFAULT_SUCCESS_MESSAGE, 'success');
   });
 
   test('toastBySyncResult treats empty success/fallback messages as defaults', () => {
     const fallbackStatus = toastBySyncResult(SYNC_STATUS.LOCAL_FALLBACK, '', '');
     expect(fallbackStatus).toBe('fallback');
-    expect(toast).toHaveBeenLastCalledWith('Изменения сохранены локально. Синхронизация будет повторена позже', 'info');
+    expect(toast).toHaveBeenLastCalledWith(DEFAULT_FALLBACK_MESSAGE, 'info');
 
     const successStatus = toastBySyncResult(SYNC_STATUS.LOCAL, '', '');
     expect(successStatus).toBe('success');
-    expect(toast).toHaveBeenLastCalledWith('Операция выполнена', 'success');
+    expect(toast).toHaveBeenLastCalledWith(DEFAULT_SUCCESS_MESSAGE, 'success');
   });
 });
