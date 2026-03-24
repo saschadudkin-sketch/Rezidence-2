@@ -10,6 +10,16 @@
 
 import { createContext, useContext, useReducer, useEffect, useCallback, useRef } from 'react';
 import { normalizePhone } from '../utils';
+import {
+  setStatusWithHistory,
+  arriveWithHistory,
+  approveAndArriveWithHistory,
+} from '../domain/requestWorkflow';
+import {
+  REQUEST_SET_STATUS,
+  REQUEST_ARRIVE,
+  HISTORY_ADD,
+} from './requestActionTypes';
 
 import { requestsReducer, INITIAL_REQUESTS, INITIAL_HISTORY }                           from './slices/requestsSlice';
 import { chatReducer,     INITIAL_CHAT,     INITIAL_CHAT_LAST_SEEN }                    from './slices/chatSlice';
@@ -21,9 +31,9 @@ import { blacklistReducer, INITIAL_BLACKLIST }                                  
 
 export const A = {
   REQUEST_ADD: 'REQUEST_ADD', REQUEST_UPDATE: 'REQUEST_UPDATE', REQUEST_DELETE: 'REQUEST_DELETE',
-  REQUEST_SET_STATUS: 'REQUEST_SET_STATUS', REQUEST_ARRIVE: 'REQUEST_ARRIVE',
+  REQUEST_SET_STATUS, REQUEST_ARRIVE,
   REQUESTS_SET_ALL: 'REQUESTS_SET_ALL', REQUEST_ACTIVATE_SCHEDULED: 'REQUEST_ACTIVATE_SCHEDULED',
-  HISTORY_ADD: 'HISTORY_ADD',
+  HISTORY_ADD,
   CHAT_SEND: 'CHAT_SEND', CHAT_SET_ALL: 'CHAT_SET_ALL', CHAT_MARK_SEEN: 'CHAT_MARK_SEEN',
   CHAT_UPDATE_MESSAGE: 'CHAT_UPDATE_MESSAGE', CHAT_DELETE_MESSAGE: 'CHAT_DELETE_MESSAGE',
   USER_ADD: 'USER_ADD', USER_UPDATE: 'USER_UPDATE', USER_DELETE: 'USER_DELETE', USERS_SET_ALL: 'USERS_SET_ALL',
@@ -186,11 +196,11 @@ export function useActions() {
     setAllRequests:    useCallback((requests)     => dispatch({ type: A.REQUESTS_SET_ALL,           requests }),                   [dispatch]),
     activateScheduled: useCallback(()             => dispatch({ type: A.REQUEST_ACTIVATE_SCHEDULED }),                             [dispatch]),
 
-    approveRequest: useCallback((id, byName, byRole) => { const now = new Date(); dispatch({ type: A.REQUEST_SET_STATUS, id, status: 'approved' }); dispatch({ type: A.HISTORY_ADD, reqId: id, byName, byRole, label: 'Допуск разрешён', at: now }); }, [dispatch]),
-    rejectRequest:  useCallback((id, byName, byRole) => { const now = new Date(); dispatch({ type: A.REQUEST_SET_STATUS, id, status: 'rejected' }); dispatch({ type: A.HISTORY_ADD, reqId: id, byName, byRole, label: 'Отказано', at: now }); }, [dispatch]),
-    acceptRequest:  useCallback((id, byName, byRole) => { const now = new Date(); dispatch({ type: A.REQUEST_SET_STATUS, id, status: 'accepted' }); dispatch({ type: A.HISTORY_ADD, reqId: id, byName, byRole, label: 'Принято в работу', at: now }); }, [dispatch]),
-    arriveRequest:  useCallback((id, byName, byRole) => { const now = new Date(); dispatch({ type: A.REQUEST_ARRIVE, id, arrivedAt: now }); dispatch({ type: A.HISTORY_ADD, reqId: id, byName, byRole, label: 'Отмечен вход', at: now }); }, [dispatch]),
-    approveAndArrive: useCallback((id, byName, byRole) => { const now = new Date(); dispatch({ type: A.REQUEST_SET_STATUS, id, status: 'approved' }); dispatch({ type: A.REQUEST_ARRIVE, id, arrivedAt: now }); dispatch({ type: A.HISTORY_ADD, reqId: id, byName, byRole, label: 'Допуск разрешён', at: now }); dispatch({ type: A.HISTORY_ADD, reqId: id, byName, byRole, label: 'Отмечен вход', at: new Date(now.getTime() + 1) }); }, [dispatch]),
+    approveRequest: useCallback((id, byName, byRole) => setStatusWithHistory(dispatch, id, 'approved', 'Допуск разрешён', byName, byRole), [dispatch]),
+    rejectRequest:  useCallback((id, byName, byRole) => setStatusWithHistory(dispatch, id, 'rejected', 'Отказано', byName, byRole), [dispatch]),
+    acceptRequest:  useCallback((id, byName, byRole) => setStatusWithHistory(dispatch, id, 'accepted', 'Принято в работу', byName, byRole), [dispatch]),
+    arriveRequest:  useCallback((id, byName, byRole) => arriveWithHistory(dispatch, id, byName, byRole), [dispatch]),
+    approveAndArrive: useCallback((id, byName, byRole) => approveAndArriveWithHistory(dispatch, id, byName, byRole), [dispatch]),
 
     sendMessage:    useCallback((msg)     => dispatch({ type: A.CHAT_SEND,    message: msg }),   [dispatch]),
     setAllMessages: useCallback((msgs)    => dispatch({ type: A.CHAT_SET_ALL, messages: msgs }), [dispatch]),

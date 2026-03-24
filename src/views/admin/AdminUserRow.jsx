@@ -3,8 +3,9 @@ import { useActions, useAvatar } from '../../store/AppStore';
 import { ROLE_LABELS, S_END } from '../../constants';
 import { AvatarCircle } from '../../ui/AvatarCircle';
 import { toast } from '../../ui/Toasts';
+import { toastBySyncResult } from '../../ui/syncFeedback';
 import { canDeleteUser, canChangeRole } from '../../domain/permissions';
-import { FB_MODE, saveUser, removeUser } from '../../services/firebaseService';
+import { services } from '../../services/providers/serviceContainer';
 
 export default function AdminUserRow({ u, currentUser }) {
   const isSelf = u.uid === currentUser.uid;
@@ -19,20 +20,18 @@ export default function AdminUserRow({ u, currentUser }) {
   const { updateUser, deleteUser } = useActions();
   const avData = useAvatar(u.uid);
 
-  function save() {
+  async function save() {
     if (!name.trim()) { toast('Введите имя', 'error'); return; }
     const patch = { name: name.trim(), phone: phone.trim(), role, apartment: apt.trim() || '—' };
-    updateUser(u.uid, patch, u.phone);
-    if (FB_MODE === 'live') saveUser(u.uid, patch).catch(console.warn);
+    const mode = await services.admin.saveUserEverywhere({ uid: u.uid, patch, updateLocal: updateUser, oldPhone: u.phone });
     setEditing(false);
-    toast('Данные сохранены', 'success');
+    toastBySyncResult(mode, 'Данные сохранены', 'Пользователь сохранён локально. Синхронизация будет повторена позже');
   }
 
-  function del() {
+  async function del() {
     if (!canDel) { toast('Нельзя удалить собственный аккаунт', 'error'); return; }
-    deleteUser(u.uid);
-    if (FB_MODE === 'live') removeUser(u.uid).catch(console.warn);
-    toast(u.name + ' удалён', 'success');
+    const mode = await services.admin.removeUserEverywhere({ uid: u.uid, removeLocal: deleteUser });
+    toastBySyncResult(mode, u.name + ' удалён', 'Удаление выполнено локально. Синхронизация будет повторена позже');
   }
 
   function handleCancel() { setEditing(false); }
