@@ -10,8 +10,12 @@ function normalizeMode(mode) {
 }
 
 function resolveMode() {
-  const envMode = normalizeMode(process.env.REACT_APP_RUNTIME_MODE || process.env.REACT_APP_MODE);
-  if (envMode) return envMode;
+  const runtimeMode = normalizeMode(process.env.REACT_APP_RUNTIME_MODE);
+  if (runtimeMode) return runtimeMode;
+
+  const appMode = normalizeMode(process.env.REACT_APP_MODE);
+  if (appMode) return appMode;
+
   return FEATURES.FIREBASE_LIVE ? LIVE_MODE : DEMO_MODE;
 }
 

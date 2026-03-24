@@ -38,6 +38,13 @@ describe('runtimeMode', () => {
     expect(runtimeMode.MODE).toBe('demo');
   });
 
+  test('falls back to REACT_APP_MODE when REACT_APP_RUNTIME_MODE is invalid', () => {
+    process.env.REACT_APP_RUNTIME_MODE = 'staging';
+    process.env.REACT_APP_MODE = 'live';
+    const runtimeMode = require('./runtimeMode');
+    expect(runtimeMode.MODE).toBe('live');
+  });
+
   test('normalizes env values (trim + lowercase)', () => {
     process.env.REACT_APP_RUNTIME_MODE = '  LIVE  ';
     const runtimeMode = require('./runtimeMode');
