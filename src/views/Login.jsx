@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { useUsers } from '../store/AppStore';
 import { findByPhone } from '../utils';
 import { toast } from '../ui/Toasts';
-import { FB_MODE } from '../services/firebaseService';
+import { isLiveMode } from '../config/runtimeMode';
 import { LOGO } from '../constants/logo';
 
 const HINTS = [
@@ -41,7 +41,7 @@ export default function Login({ onLogin }) {
     setLoading(true);
     await new Promise(r => setTimeout(r, 500));
     setLoading(false);
-    if (FB_MODE === 'live') console.warn('[Auth] OTP verification stub — connect Firebase Auth for production!');
+    if (isLiveMode()) console.warn('[Auth] OTP verification stub — connect Firebase Auth for production!');
     onLogin(found);
   };
 

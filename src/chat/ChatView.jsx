@@ -7,8 +7,7 @@ import { fmtTime, genId } from '../utils.js';
 import { AvatarCircle } from '../ui/AvatarCircle.jsx';
 import { PhotoLightbox } from '../ui/PhotoLightbox.jsx';
 import { toast } from '../ui/Toasts.jsx';
-
-import { FB_MODE, sendMessage as fbSendMessage } from '../services/firebaseService';
+import { services } from '../services/providers/serviceContainer';
 
 
 
@@ -147,11 +146,18 @@ export function ChatView({user}){
   const onLongPressEnd=()=>clearTimeout(longPressRef.current);
 
   // Отправка
-  const send=useCallback(()=>{
+  const send=useCallback(async ()=>{
     if(!text.trim())return;
     const m={id:genId("m"),uid:user.uid,name:user.name,role:user.role,text:text.trim(),photo:null,replyTo:replyTo||null,at:new Date()};
-    if(FB_MODE==="live"){fbSendMessage({uid:user.uid,name:user.name,role:user.role,text:text.trim()}).catch(e=>console.warn(e));}
-    sendMessage(m);setText("");setReplyTo(null);inputRef.current&&inputRef.current.focus();
+    try{
+      await services.chat.sendMessage({
+        remotePayload: { uid:user.uid, name:user.name, role:user.role, text:text.trim(), replyTo:replyTo||null },
+        localMessage: m,
+        sendLocal: sendMessage,
+      });
+    } finally {
+      setText(""); setReplyTo(null); inputRef.current&&inputRef.current.focus();
+    }
   },[text,user,sendMessage,replyTo]);
 
   const onPhotoClick=()=>fileRef.current&&fileRef.current.click();
@@ -169,7 +175,11 @@ export function ChatView({user}){
         img.onerror=()=>resolve(dataUrl);img.src=dataUrl;
       });
       const m={id:genId("m"),uid:user.uid,name:user.name,role:user.role,text:"",photo:compressed,at:new Date()};
-      sendMessage(m);
+      await services.chat.sendMessage({
+        remotePayload: { uid:user.uid, name:user.name, role:user.role, text:"", photo:compressed },
+        localMessage: m,
+        sendLocal: sendMessage,
+      });
     }catch(err){toast("Не удалось загрузить фото","error");}
     finally{setPhotoSending(false);}
   };
