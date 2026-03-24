@@ -24,9 +24,29 @@ describe('passesApi (demo mode)', () => {
   });
 
   test('logVisit stores entry', async () => {
-    const entry = await api.logVisit({ userId: 'u1', result: 'allowed' });
+    const entry = await api.logVisit({ userId: 'u1', requestId: 'r1', result: 'allowed', reason: 'ok' });
     expect(entry.userId).toBe('u1');
+    expect(entry.requestId).toBe('r1');
     expect(entry.result).toBe('allowed');
+    const logs = await api.getVisitLogs();
+    expect(logs).toHaveLength(1);
+    expect(logs[0].reason).toBe('ok');
+  });
+
+  test('visit logs survive module reload via localStorage', async () => {
+    await api.logVisit({ userId: 'u1', requestId: 'r42', result: 'denied', reason: 'expired' });
+    jest.resetModules();
+    jest.doMock('../../config/runtimeMode', () => ({ isLiveMode: () => false }));
+    const apiReloaded = require('./passesApi');
+    const logs = await apiReloaded.getVisitLogs();
+    expect(logs[0].requestId).toBe('r42');
+    expect(logs[0].reason).toBe('expired');
+  });
+
+  test('clearVisitLogs removes persisted events', async () => {
+    await api.logVisit({ userId: 'u1', requestId: 'r11', result: 'allowed', reason: 'ok' });
+    await api.clearVisitLogs();
+    const logs = await api.getVisitLogs();
+    expect(logs).toEqual([]);
   });
 });
-
