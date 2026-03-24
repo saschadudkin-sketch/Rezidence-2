@@ -2,12 +2,9 @@ import { useState, useEffect, useRef } from 'react';
 import { useActions, usePerms } from '../store/AppStore.jsx';
 import { genId } from '../utils.js';
 import { toast } from '../ui/Toasts';
+import { toastBySyncResult } from '../ui/syncFeedback';
 import { lockScroll, unlockScroll } from '../ui/scrollLock.js';
-import {
-  FB_MODE,
-  createRequest,
-  uploadRequestPhoto,
-} from '../services/firebaseService';
+import { services } from '../services/providers/serviceContainer';
 
 // ─── Предикаты категорий ─────────────────────────────────────────────────────
 
@@ -224,27 +221,16 @@ export function useCreateRequest({ user, type, initialCat, initialData, onClose,
 
     // Загрузка фото
     if (photos.length > 0) {
-      if (FB_MODE === 'live') {
-        const uploaded = [];
-        for (let i = 0; i < photos.length; i++) {
-          try { uploaded.push(await uploadRequestPhoto(newReq.id + '_' + i, photos[i])); }
-          catch (e) { console.warn(e); uploaded.push(photos[i]); }
-        }
-        newReq.photos = uploaded;
-      } else {
-        newReq.photos = photos;
-      }
+      newReq.photos = await services.requests.resolvePhotos(newReq.id, photos);
       newReq.photo = newReq.photos[0] || null;
     }
 
-    if (FB_MODE === 'live') createRequest({ ...newReq, id: undefined }).catch(console.warn);
-    addRequest(newReq);
+    const mode = await services.requests.submit({ request: newReq, addLocal: addRequest });
     setLoading(false);
-
     const successMsg = isScheduled
       ? 'Запланировано на ' + fmtScheduled(scheduledFor)
       : type === 'pass' ? 'Пропуск создан' : 'Заявка отправлена';
-    toast(successMsg, 'success');
+    toastBySyncResult(mode, successMsg, 'Заявка сохранена локально. Синхронизация будет повторена позже');
     onDone();
     onClose();
   };
