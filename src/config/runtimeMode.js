@@ -1,7 +1,7 @@
 import { FEATURES } from './features';
 
-const LIVE_MODE = 'live';
-const DEMO_MODE = 'demo';
+export const LIVE_MODE = 'live';
+export const DEMO_MODE = 'demo';
 const ALLOWED_MODES = new Set([LIVE_MODE, DEMO_MODE]);
 
 function normalizeMode(mode) {

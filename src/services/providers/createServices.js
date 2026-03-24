@@ -2,12 +2,16 @@ import { MODE } from '../../config/runtimeMode';
 import { createDemoProvider } from './demoProvider';
 import { createFirebaseProvider } from './firebaseProvider';
 
+const LIVE_MODE = 'live';
+const DEMO_MODE = 'demo';
+
 /**
  * Фабрика сервисов.
- * Сейчас demo/live используют единые gateways, но точка выбора уже централизована.
+ * Возвращает mode-aware набор сервисов, выбирая реализацию провайдера
+ * по единому правилу режима.
  */
 export function createServices(mode = MODE) {
-  const resolvedMode = mode === 'live' ? 'live' : 'demo';
-  const provider = resolvedMode === 'live' ? createFirebaseProvider() : createDemoProvider();
+  const resolvedMode = mode === LIVE_MODE ? LIVE_MODE : DEMO_MODE;
+  const provider = resolvedMode === LIVE_MODE ? createFirebaseProvider() : createDemoProvider();
   return { mode: resolvedMode, ...provider };
 }
