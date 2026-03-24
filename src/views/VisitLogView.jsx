@@ -3,12 +3,14 @@
  * Карточки с полной информацией о визите.
  */
 
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect } from 'react';
 import { useRequests } from '../store/AppStore.jsx';
 import { useDebounce } from '../hooks/useDebounce';
 import { CAT_LABEL, CAT_ICON, PASS_DURATION_ICON, PASS_DURATION_LABEL } from '../constants/index.js';
+import { getValidationReasonLabel } from '../constants/statusPresentation';
 import { isResident } from '../domain/permissions';
 import { fmtTime } from '../utils.js';
+import { getVisitLogs } from '../shared/api/passesApi';
 
 function fmtDateFull(d) {
   const dt = d instanceof Date ? d : new Date(d);
@@ -83,13 +85,34 @@ function VisitCard({ r }) {
 
 export default function VisitLogView({ user }) {
   const requests = useRequests();
+  const [visitEvents, setVisitEvents] = useState([]);
   const [query, setQuery] = useState('');
   const [period, setPeriod] = useState('week');
   const debouncedQuery = useDebounce(query, 250);
   const q = debouncedQuery.trim().toLowerCase();
 
+  useEffect(() => {
+    let cancelled = false;
+    getVisitLogs()
+      .then((events) => { if (!cancelled) setVisitEvents(events || []); })
+      .catch(() => { if (!cancelled) setVisitEvents([]); });
+    return () => { cancelled = true; };
+  }, []);
+
   const visits = useMemo(() => {
-    let arr = requests.filter(r => r.type === 'pass' && (r.arrivedAt || r.status === 'expired'));
+    const eventsByRequestId = new Map((visitEvents || []).filter(e => e.requestId).map(e => [e.requestId, e]));
+    let arr = requests
+      .filter(r => r.type === 'pass' && (r.arrivedAt || r.status === 'expired' || eventsByRequestId.has(r.id)))
+      .map(r => {
+        const event = eventsByRequestId.get(r.id);
+        if (!event) return r;
+        return {
+          ...r,
+          arrivedAt: event.timestamp || r.arrivedAt,
+          status: event.result === 'denied' ? 'rejected' : r.status,
+          comment: event.reason ? `${r.comment ? `${r.comment} · ` : ''}Проверка QR: ${getValidationReasonLabel(event.reason)}` : r.comment,
+        };
+      });
     if (isResident(user.role)) arr = arr.filter(r => r.createdByUid === user.uid);
     if (period !== 'all') {
       const ms = period === 'today' ? 86_400_000 : period === 'week' ? 7 * 86_400_000 : 30 * 86_400_000;
@@ -105,7 +128,7 @@ export default function VisitLogView({ user }) {
       );
     }
     return arr.sort((a, b) => new Date(b.arrivedAt || b.createdAt) - new Date(a.arrivedAt || a.createdAt));
-  }, [requests, user, period, q]);
+  }, [requests, visitEvents, user, period, q]);
 
   const groups = groupByDate(visits);
   const totalCount = visits.length;

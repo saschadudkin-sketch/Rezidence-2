@@ -469,6 +469,17 @@ html.theme-light .login-mobile-top img{filter:drop-shadow(0 0 8px rgba(140,100,3
 }
 .btn-accept:active{background:var(--g-bg2)}
 
+/* ── Mobile accessibility: minimum 44px tap targets ── */
+.btn-gold,.btn-outline,.btn-yes,.btn-no,.btn-accept,
+.date-pill,.tab-btn,.scan-qr-btn,.schedule-toggle,.schedule-preset,
+.temp-pass-toggle,.temp-pass-preset,.pass-dur-btn,.type-card,.tn-btn{
+  min-height:44px;
+}
+.date-pill,.schedule-preset,.temp-pass-preset{padding-top:8px;padding-bottom:8px}
+.btn-gold,.btn-outline,.btn-yes,.btn-no,.btn-accept,.scan-qr-btn,.schedule-toggle,.temp-pass-toggle,.pass-dur-btn{
+  touch-action:manipulation;
+}
+
 .btn-arrive{
   background:transparent;color:var(--arrived-t);
   border:1px solid rgba(91,143,212,.35);border-radius:var(--r);padding:8px 16px;

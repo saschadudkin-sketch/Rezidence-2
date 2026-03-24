@@ -1,8 +1,10 @@
 import { useState, useRef, useEffect, useCallback } from 'react';
 import { createPortal } from 'react-dom';
-import { useRequests, useActions } from '../store/AppStore.jsx';
+import { useRequests, useActions, useBlacklist } from '../store/AppStore.jsx';
 import { parsePassQR } from '../services/qrService';
+import { validatePass, logVisit } from '../shared/api/passesApi';
 import { CAT_LABEL, STS_LABEL } from '../constants/index.js';
+import { getValidationReasonLabel, getStatusToneClass } from '../constants/statusPresentation';
 import { lockScroll, unlockScroll } from '../ui/scrollLock.js';
 import { toast } from '../ui/Toasts.jsx';
 
@@ -13,8 +15,11 @@ import { toast } from '../ui/Toasts.jsx';
  */
 export function ScanQRModal({ user, onClose }) {
   const requests = useRequests();
+  const blacklist = useBlacklist();
   const { approveRequest, rejectRequest, arriveRequest, approveAndArrive } = useActions();
   const [scannedReq, setScannedReq] = useState(null);
+  const [validation, setValidation] = useState(null);
+  const [checking, setChecking] = useState(false);
   const [scanning, setScanning]     = useState(true);
   const [manualId, setManualId]     = useState('');
   const [camError, setCamError]     = useState(false);
@@ -31,7 +36,30 @@ export function ScanQRModal({ user, onClose }) {
     }
   }, []);
 
-  const handleScan = useCallback((raw) => {
+  const validateAndSetRequest = useCallback(async (found) => {
+    const passPayload = {
+      id: found.id,
+      userId: found.createdByUid || found.id,
+      validUntil: found.validUntil || null,
+    };
+    const result = await validatePass(passPayload, { blacklist });
+    setValidation(result);
+    if (result.status === 'denied') {
+      await logVisit({
+        userId: passPayload.userId,
+        requestId: found.id,
+        timestamp: new Date().toISOString(),
+        result: 'denied',
+        reason: result.reason,
+        visitorName: found.visitorName || null,
+        category: found.category,
+        createdByApt: found.createdByApt,
+        createdByName: found.createdByName,
+      });
+    }
+  }, [blacklist]);
+
+  const handleScan = useCallback(async (raw) => {
     if (foundRef.current) return; // guard: не обрабатывать повторно
     const data = parsePassQR(raw);
     if (!data) { toast('Неизвестный QR-код', 'error'); return; }
@@ -41,8 +69,11 @@ export function ScanQRModal({ user, onClose }) {
     stopCamera();
     setScanning(false);
     setScannedReq(found);
+    setChecking(true);
+    await validateAndSetRequest(found);
+    setChecking(false);
     if (navigator.vibrate) navigator.vibrate(100);
-  }, [requests, stopCamera]);
+  }, [requests, stopCamera, validateAndSetRequest]);
 
   useEffect(() => {
     lockScroll();
@@ -80,7 +111,7 @@ export function ScanQRModal({ user, onClose }) {
             try {
               const barcodes = await detector.detect(videoRef.current);
               if (barcodes.length > 0) {
-                handleScan(barcodes[0].rawValue);
+                void handleScan(barcodes[0].rawValue);
               }
             } catch { /* ignore */ }
           }, 300);
@@ -97,7 +128,7 @@ export function ScanQRModal({ user, onClose }) {
     return () => { cancelled = true; stopCamera(); };
   }, [scanning, stopCamera, handleScan]);
 
-  const handleManualSearch = () => {
+  const handleManualSearch = async () => {
     const q = manualId.trim().toLowerCase();
     if (!q) return;
     const found = requests.find(r =>
@@ -109,9 +140,12 @@ export function ScanQRModal({ user, onClose }) {
     stopCamera();
     setScanning(false);
     setScannedReq(found);
+    setChecking(true);
+    await validateAndSetRequest(found);
+    setChecking(false);
   };
 
-  const handleApprove = () => {
+  const handleApprove = async () => {
     if (scannedReq.status === 'pending') {
       const dur = scannedReq.passDuration || 'once';
       if (dur === 'once') {
@@ -126,19 +160,45 @@ export function ScanQRModal({ user, onClose }) {
       arriveRequest(scannedReq.id, user.name, user.role);
       toast('Вход отмечен', 'success');
     }
+    await logVisit({
+      userId: scannedReq.createdByUid || scannedReq.id,
+      requestId: scannedReq.id,
+      timestamp: new Date().toISOString(),
+      result: 'allowed',
+      reason: 'ok',
+      visitorName: scannedReq.visitorName || null,
+      category: scannedReq.category,
+      createdByApt: scannedReq.createdByApt,
+      createdByName: scannedReq.createdByName,
+    });
     onClose();
   };
 
-  const handleReject = () => {
+  const handleReject = async () => {
     if (scannedReq && scannedReq.status === 'pending') {
       rejectRequest(scannedReq.id, user.name, user.role);
+    }
+    if (scannedReq) {
+      await logVisit({
+        userId: scannedReq.createdByUid || scannedReq.id,
+        requestId: scannedReq.id,
+        timestamp: new Date().toISOString(),
+        result: 'denied',
+        reason: 'manual_reject',
+        visitorName: scannedReq.visitorName || null,
+        category: scannedReq.category,
+        createdByApt: scannedReq.createdByApt,
+        createdByName: scannedReq.createdByName,
+      });
     }
     toast('В допуске отказано', 'error');
     onClose();
   };
 
-  const canApprove = scannedReq && (scannedReq.status === 'pending' || scannedReq.status === 'approved');
+  const deniedByValidation = validation?.status === 'denied';
+  const canApprove = scannedReq && !deniedByValidation && (scannedReq.status === 'pending' || scannedReq.status === 'approved');
   const actionLabel = scannedReq?.status === 'approved' ? 'Отметить вход' : 'Пропустить';
+  const validationReason = getValidationReasonLabel(validation?.reason);
 
   return createPortal(
     <div className="overlay" onClick={e => e.target === e.currentTarget && onClose()}>
@@ -181,14 +241,23 @@ export function ScanQRModal({ user, onClose }) {
 
           {scannedReq && (
             <div className="qr-result">
-              <div className={'qr-result-status ' + scannedReq.status}>
-                {canApprove ? '✅' : scannedReq.status === 'rejected' ? '🚫' : '⚠️'}
+              <div className={'qr-result-status ' + getStatusToneClass(scannedReq.status, validation?.status)}>
+                {checking ? '⏳' : canApprove ? '✅' : deniedByValidation || scannedReq.status === 'rejected' ? '🚫' : '⚠️'}
                 <span>
-                  {canApprove
+                  {checking
+                    ? 'Проверяем пропуск...'
+                    : deniedByValidation
+                      ? 'Доступ запрещён'
+                      : canApprove
                     ? (scannedReq.status === 'approved' ? 'Допуск открыт — ожидает входа' : 'Ожидает решения')
                     : STS_LABEL[scannedReq.status] || scannedReq.status}
                 </span>
               </div>
+              {validationReason && (
+                <div style={{ fontSize: 12, color: 'var(--err-t)', marginBottom: 10, fontWeight: 600 }}>
+                  {validationReason}
+                </div>
+              )}
               <div className="qr-result-details">
                 <div className="qr-info-row">
                   <span className="qr-info-lbl">Тип</span>
@@ -228,7 +297,7 @@ export function ScanQRModal({ user, onClose }) {
               {canApprove ? (
                 <>
                   <button className="btn-no" onClick={handleReject} style={{ flex: 1 }}>Отказать</button>
-                  <button className="btn-yes" onClick={handleApprove} style={{ flex: 2, fontSize: 14, padding: '14px 20px' }}>{actionLabel}</button>
+                  <button className="btn-yes" onClick={handleApprove} style={{ flex: 2, fontSize: 14, padding: '14px 20px' }} disabled={checking}>{actionLabel}</button>
                 </>
               ) : (
                 <>

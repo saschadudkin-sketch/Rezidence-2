@@ -46,8 +46,8 @@ export async function validatePass(passPayload, context = {}) {
   return validatePassByRules(passPayload, context);
 }
 
-export async function logVisit({ userId, timestamp = new Date().toISOString(), result }) {
-  const entry = { userId, timestamp, result };
+export async function logVisit({ userId, timestamp = new Date().toISOString(), result, ...rest }) {
+  const entry = { id: `v_${Date.now()}`, userId, timestamp, result, ...rest };
   if (!isLiveMode()) {
     demoVisitLogs.unshift(entry);
     return entry;
@@ -64,9 +64,18 @@ export async function logVisit({ userId, timestamp = new Date().toISOString(), r
   return entry;
 }
 
+export async function getVisitLogs() {
+  if (!isLiveMode()) return [...demoVisitLogs];
+
+  const app = getFirebaseApp();
+  if (!app) return [...demoVisitLogs];
+  // live implementation placeholder:
+  // read visit logs from Firestore
+  return [...demoVisitLogs];
+}
+
 // test helpers
 export function __resetPassesApiDemoState() {
   demoPasses.length = 0;
   demoVisitLogs.length = 0;
 }
-

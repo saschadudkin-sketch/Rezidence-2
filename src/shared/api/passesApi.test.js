@@ -24,9 +24,12 @@ describe('passesApi (demo mode)', () => {
   });
 
   test('logVisit stores entry', async () => {
-    const entry = await api.logVisit({ userId: 'u1', result: 'allowed' });
+    const entry = await api.logVisit({ userId: 'u1', requestId: 'r1', result: 'allowed', reason: 'ok' });
     expect(entry.userId).toBe('u1');
+    expect(entry.requestId).toBe('r1');
     expect(entry.result).toBe('allowed');
+    const logs = await api.getVisitLogs();
+    expect(logs).toHaveLength(1);
+    expect(logs[0].reason).toBe('ok');
   });
 });
-

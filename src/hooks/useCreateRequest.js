@@ -5,6 +5,7 @@ import { toast } from '../ui/Toasts';
 import { toastBySyncResult } from '../ui/syncFeedback';
 import { lockScroll, unlockScroll } from '../ui/scrollLock.js';
 import { services } from '../services/providers/serviceContainer';
+import { toLocalDateTimeInputValue, parseLocalDateInputValue } from '../utils/dateInput';
 
 // ─── Предикаты категорий ─────────────────────────────────────────────────────
 
@@ -57,7 +58,7 @@ export const fmtScheduled = (s) => {
 export const minDateTime = () => {
   const d = new Date(Date.now() + 5 * 60_000);
   d.setSeconds(0, 0);
-  return d.toISOString().slice(0, 16);
+  return toLocalDateTimeInputValue(d);
 };
 
 export const SCHEDULE_PRESETS = [
@@ -153,7 +154,7 @@ export function useCreateRequest({ user, type, initialCat, initialData, onClose,
   const applyPreset = (preset) => {
     const d = preset.fn ? preset.fn() : new Date(Date.now() + preset.mins * 60_000);
     d.setSeconds(0, 0);
-    setScheduledFor(d.toISOString().slice(0, 16));
+    setScheduledFor(toLocalDateTimeInputValue(d));
   };
 
   const handleSaveTpl = () => {
@@ -192,6 +193,12 @@ export function useCreateRequest({ user, type, initialCat, initialData, onClose,
 
     const schedDate   = showSchedule && scheduledFor ? new Date(scheduledFor) : null;
     const isScheduled = Boolean(schedDate && schedDate > new Date());
+    const parsedValidUntil = type === 'pass' && validUntil ? parseLocalDateInputValue(validUntil) : null;
+    if (type === 'pass' && validUntil && !parsedValidUntil) {
+      setLoading(false);
+      toast('Некорректная дата действия пропуска', 'error');
+      return;
+    }
 
     const newReq = {
       id:            genId('r'),
@@ -210,7 +217,7 @@ export function useCreateRequest({ user, type, initialCat, initialData, onClose,
       comment:       comment.trim(),
       priority:      'normal',
       passDuration:  type === 'pass' ? (validUntil ? 'temporary' : 'once') : null,
-      validUntil:    type === 'pass' && validUntil ? new Date(validUntil) : null,
+      validUntil:    parsedValidUntil,
       photo:         null,
       photos:        [],
       status:        isScheduled ? 'scheduled' : 'pending',
