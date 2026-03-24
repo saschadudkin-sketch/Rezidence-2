@@ -49,4 +49,39 @@ describe('passesApi (demo mode)', () => {
     const logs = await api.getVisitLogs();
     expect(logs).toEqual([]);
   });
+
+  test('getVisitLogs keeps reverse-chronological order (newest first)', async () => {
+    await api.logVisit({ userId: 'u1', requestId: 'older', result: 'allowed', reason: 'ok' });
+    await new Promise((resolve) => setTimeout(resolve, 2));
+    await api.logVisit({ userId: 'u1', requestId: 'newer', result: 'denied', reason: 'expired' });
+    const logs = await api.getVisitLogs();
+    expect(logs[0].requestId).toBe('newer');
+    expect(logs[1].requestId).toBe('older');
+  });
+});
+
+describe('passesApi (live mode fallback)', () => {
+  let api;
+
+  beforeEach(() => {
+    jest.resetModules();
+    jest.doMock('../../config/runtimeMode', () => ({ isLiveMode: () => true }));
+    jest.doMock('./firebase', () => ({ getFirebaseApp: () => null }));
+    api = require('./passesApi');
+    api.__resetPassesApiDemoState();
+  });
+
+  test('createPass falls back to in-memory storage when Firebase app is unavailable', async () => {
+    await api.createPass({ userId: 'u_live_1' });
+    const passes = await api.getPasses();
+    expect(passes).toHaveLength(1);
+    expect(passes[0].userId).toBe('u_live_1');
+  });
+
+  test('visit logs are still persisted/retrieved in live mode fallback path', async () => {
+    await api.logVisit({ userId: 'u_live_1', requestId: 'r_live_1', result: 'allowed', reason: 'ok' });
+    const logs = await api.getVisitLogs();
+    expect(logs).toHaveLength(1);
+    expect(logs[0].requestId).toBe('r_live_1');
+  });
 });
