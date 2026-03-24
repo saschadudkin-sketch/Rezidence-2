@@ -4,7 +4,7 @@ import {
 } from '../store/AppStore';
 import { ROLE_LABELS } from '../constants';
 import { canManageRequests } from '../constants/requestPredicates';
-import { ROLES, isStaff } from '../domain/permissions';
+import { ROLES, isStaff, canAccessTab, getTabsForRole } from '../domain/permissions';
 import { sendNotif, playAlert } from '../utils';
 import { AvatarCircle } from '../ui/AvatarCircle';
 import { AvatarModal } from '../ui/Modals';
@@ -67,7 +67,18 @@ export default function Dashboard({ user, onLogout }) {
   const defaultTab = { owner: 'passes', tenant: 'passes', contractor: 'passes', concierge: 'passes', security: 'guardpost', admin: 'stats' }[user.role] || 'passes';
   const [activeTab, setActiveTab] = useState(defaultTab);
   const [highlightReqId, setHighlightReqId] = useState(null);
-  const goTab = k => { if (k === 'chat') markChatSeen(user.uid); setActiveTab(k); };
+  const goTab = (k) => {
+    if (!canAccessTab(user.role, k)) return;
+    if (k === 'chat') markChatSeen(user.uid);
+    setActiveTab(k);
+  };
+
+  useEffect(() => {
+    if (!canAccessTab(user.role, activeTab)) {
+      const fallback = getTabsForRole(user.role)[0] || defaultTab;
+      setActiveTab(fallback);
+    }
+  }, [activeTab, user.role, defaultTab]);
 
   // ── Счётчики ──────────────────────────────────────────────────────────────
   const pendingT   = requests.filter(r => r.type === 'tech' && r.status === 'pending').length;
@@ -174,14 +185,20 @@ export default function Dashboard({ user, onLogout }) {
   }, [user.role, user.uid, setAllRequests, setAllMessages, setAllUsers, setPerms, setTemplates]);
 
   // ── Навигация ─────────────────────────────────────────────────────────────
-  const NAV = {
-    owner:      [['passes', '🎫', 'Пропуска', 0], ['tech', '🔧', 'Техслужба', 0],     ['perms', '📋', 'Список', 0],  ['chat', '💬', 'Чат', unreadMsgs]],
-    tenant:     [['passes', '🎫', 'Пропуска', 0], ['tech', '🔧', 'Техслужба', 0],     ['perms', '📋', 'Список', 0],  ['chat', '💬', 'Чат', unreadMsgs]],
-    contractor: [['passes', '🎫', 'Пропуска', 0], ['tech', '🔧', 'Техслужба', 0],     ['perms', '📋', 'Список', 0],  ['chat', '💬', 'Чат', unreadMsgs]],
-    concierge:  [['passes', '🎫', 'Заявки', pendingT], ['visitlog', '📖', 'Журнал', 0], ['blacklist', '🚫', 'ЧС', 0], ['chat', '💬', 'Чат', unreadMsgs]],
-    security:   [['guardpost', '🛡️', 'Пост', pendingP], ['passes', '📋', 'Заявки', pendingP + pendingT], ['visitlog', '📖', 'Журнал', 0], ['blacklist', '🚫', 'ЧС', 0], ['chat', '💬', 'Чат', unreadMsgs]],
-    admin:      [['stats', '📊', 'Аналитика', 0], ['requests', '📋', 'Заявки', pendingP + pendingT], ['users', '👥', 'Резиденты', 0], ['visitlog', '📖', 'Журнал', 0], ['blacklist', '🚫', 'ЧС', 0], ['chat', '💬', 'Чат', unreadMsgs]],
-  }[user.role] || [];
+  const NAV_META = {
+    passes: ['🎫', user.role === ROLES.SECURITY ? 'Заявки' : user.role === ROLES.CONCIERGE ? 'Заявки' : 'Пропуска', user.role === ROLES.SECURITY ? pendingP + pendingT : user.role === ROLES.CONCIERGE ? pendingT : 0],
+    tech: ['🔧', 'Техслужба', 0],
+    perms: ['📋', 'Список', 0],
+    chat: ['💬', 'Чат', unreadMsgs],
+    visitlog: ['📖', 'Журнал', 0],
+    blacklist: ['🚫', 'ЧС', 0],
+    guardpost: ['🛡️', 'Пост', pendingP],
+    stats: ['📊', 'Аналитика', 0],
+    requests: ['📋', 'Заявки', pendingP + pendingT],
+    users: ['👥', 'Резиденты', 0],
+  };
+  const NAV = getTabsForRole(user.role)
+    .map((tab) => [tab, ...(NAV_META[tab] || ['•', tab, 0])]);
 
   const PAGE_T = { owner: 'Добро пожаловать', tenant: 'Добро пожаловать', contractor: 'Панель подрядчика', concierge: 'Рабочее место', security: 'Пост охраны', admin: 'Управление' }[user.role];
   const aptStr = 'Апартаменты ' + user.apartment;

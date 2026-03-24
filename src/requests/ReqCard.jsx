@@ -7,6 +7,12 @@ import {
 } from '../store/AppStore.jsx';
 import { CAT_LABEL, STS_LABEL, ROLE_LABELS, PASS_DURATION_LABEL, PASS_DURATION_ICON } from '../constants/index.js';
 import {
+  canApproveRequest as canApproveByRole,
+  canRejectRequest as canRejectByRole,
+  canAcceptRequest as canAcceptByRole,
+  canMarkArrival as canMarkArrivalByRole,
+} from '../domain/permissions';
+import {
   isActiveRequest, isPendingRequest,
   isApprovedRequest, isScheduledRequest,
   canManageRequests, shouldShowActions,
@@ -85,6 +91,11 @@ export function ReqCard({ req, userRole, userName, staggerIdx = 0, onRepeat, onE
   const history = useReqHistory(req.id);
   const { approveRequest, rejectRequest, acceptRequest, arriveRequest } = useActions();
   const avData = useAvatar(req.createdByUid);
+  const actor = { role: userRole, uid: req.createdByUid };
+  const mayApprove = canApproveByRole(actor, req);
+  const mayReject = canRejectByRole(actor, req);
+  const mayAccept = canAcceptByRole(actor, req);
+  const mayMarkArrival = canMarkArrivalByRole(actor, req);
 
   // Auto-expand and scroll when highlighted
   useEffect(() => {
@@ -188,12 +199,12 @@ export function ReqCard({ req, userRole, userName, staggerIdx = 0, onRepeat, onE
         {isStaffRole && (
           <div className="req-actions">
             {req.type === 'pass' ? <>
-              {req.status === 'pending'  && <button className="btn-yes"    onClick={doApprove} disabled={!!actLoading}>{actLoading === 'approve' && <span className="btn-spin" />}Разрешить</button>}
-              {req.status === 'pending'  && <button className="btn-no"     onClick={doReject}  disabled={!!actLoading}>{actLoading === 'reject'  && <span className="btn-spin" />}Отказать</button>}
-              {isApprovedRequest(req) && <button className="btn-arrive" onClick={doArrive}  disabled={!!actLoading}>{actLoading === 'arrive'  && <span className="btn-spin" />}Отметить вход</button>}
-              {req.status === 'rejected' && <button className="btn-yes"    onClick={doApprove} disabled={!!actLoading}>{actLoading === 'approve' && <span className="btn-spin" />}Разрешить</button>}
+              {mayApprove && <button className="btn-yes"    onClick={doApprove} disabled={!!actLoading}>{actLoading === 'approve' && <span className="btn-spin" />}Разрешить</button>}
+              {mayReject && <button className="btn-no"     onClick={doReject}  disabled={!!actLoading}>{actLoading === 'reject'  && <span className="btn-spin" />}Отказать</button>}
+              {mayMarkArrival && isApprovedRequest(req) && <button className="btn-arrive" onClick={doArrive}  disabled={!!actLoading}>{actLoading === 'arrive'  && <span className="btn-spin" />}Отметить вход</button>}
+              {req.status === 'rejected' && userRole === 'security' && <button className="btn-yes" onClick={doApprove} disabled={!!actLoading}>{actLoading === 'approve' && <span className="btn-spin" />}Разрешить</button>}
             </> : <>
-              {req.status !== 'accepted' && <button className="btn-accept" onClick={doAccept} disabled={!!actLoading}>{actLoading === 'accept' && <span className="btn-spin" />}Принять заявку</button>}
+              {mayAccept && req.status !== 'accepted' && <button className="btn-accept" onClick={doAccept} disabled={!!actLoading}>{actLoading === 'accept' && <span className="btn-spin" />}Принять заявку</button>}
             </>}
           </div>
         )}
