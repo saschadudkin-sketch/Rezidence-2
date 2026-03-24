@@ -1,32 +1,30 @@
-import { sendChatMessage } from '../chatGateway';
-import {
-  resolveRequestPhotos,
-  submitRequest,
-  updateRequestEverywhere,
-  deleteRequestEverywhere,
-} from '../requestsGateway';
-import {
-  savePermsEverywhere,
-  saveUserEverywhere,
-  removeUserEverywhere,
-} from '../adminGateway';
-import { startLiveDataSync } from '../liveDataGateway';
-
 export function createDemoProvider() {
   return {
     provider: 'demo',
-    chat: { sendMessage: sendChatMessage },
+    chat: {
+      sendMessage: async ({ localMessage, sendLocal }) => {
+        sendLocal(localMessage);
+        return 'local';
+      },
+    },
     requests: {
-      resolvePhotos: resolveRequestPhotos,
-      submit: submitRequest,
-      updateEverywhere: updateRequestEverywhere,
-      deleteEverywhere: deleteRequestEverywhere,
+      resolvePhotos: async (_reqId, photos) => photos || [],
+      submit: ({ request, addLocal }) => {
+        addLocal(request);
+        return 'local';
+      },
+      updateEverywhere: ({ requestId, patch, updateLocal }) => {
+        updateLocal(requestId, patch);
+      },
+      deleteEverywhere: ({ requestId, deleteLocal }) => {
+        deleteLocal(requestId);
+      },
     },
     admin: {
-      savePermsEverywhere,
-      saveUserEverywhere,
-      removeUserEverywhere,
+      savePermsEverywhere: ({ uid, perms, saveLocal }) => saveLocal(uid, perms),
+      saveUserEverywhere: ({ uid, patch, updateLocal, oldPhone }) => updateLocal(uid, patch, oldPhone),
+      removeUserEverywhere: ({ uid, removeLocal }) => removeLocal(uid),
     },
-    liveData: { startSync: startLiveDataSync },
+    liveData: { startSync: () => () => {} },
   };
 }
