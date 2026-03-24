@@ -4,7 +4,7 @@ import { ROLE_LABELS, S_END } from '../../constants';
 import { AvatarCircle } from '../../ui/AvatarCircle';
 import { toast } from '../../ui/Toasts';
 import { canDeleteUser, canChangeRole } from '../../domain/permissions';
-import { FB_MODE, saveUser, removeUser } from '../../services/firebaseService';
+import { saveUserEverywhere, removeUserEverywhere } from '../../services/adminGateway';
 
 export default function AdminUserRow({ u, currentUser }) {
   const isSelf = u.uid === currentUser.uid;
@@ -22,16 +22,14 @@ export default function AdminUserRow({ u, currentUser }) {
   function save() {
     if (!name.trim()) { toast('Введите имя', 'error'); return; }
     const patch = { name: name.trim(), phone: phone.trim(), role, apartment: apt.trim() || '—' };
-    updateUser(u.uid, patch, u.phone);
-    if (FB_MODE === 'live') saveUser(u.uid, patch).catch(console.warn);
+    saveUserEverywhere({ uid: u.uid, patch, updateLocal: updateUser, oldPhone: u.phone });
     setEditing(false);
     toast('Данные сохранены', 'success');
   }
 
   function del() {
     if (!canDel) { toast('Нельзя удалить собственный аккаунт', 'error'); return; }
-    deleteUser(u.uid);
-    if (FB_MODE === 'live') removeUser(u.uid).catch(console.warn);
+    removeUserEverywhere({ uid: u.uid, removeLocal: deleteUser });
     toast(u.name + ' удалён', 'success');
   }
 

@@ -3,7 +3,7 @@ import { useActions } from '../../store/AppStore';
 import { STS_LABEL, S_END } from '../../constants';
 import { ReqCard } from '../../requests/ReqCard';
 import { toast } from '../../ui/Toasts';
-import { FB_MODE, deleteRequest as fbDeleteRequest, updateRequest as fbUpdateRequest } from '../../services/firebaseService';
+import { updateRequestEverywhere, deleteRequestEverywhere } from '../../services/requestsGateway';
 
 export default function AdminReqRow({ r }) {
   const [editing, setEditing] = useState(false);
@@ -12,14 +12,12 @@ export default function AdminReqRow({ r }) {
   const { deleteRequest, updateRequest } = useActions();
 
   function del() {
-    deleteRequest(r.id);
-    if (FB_MODE === 'live') fbDeleteRequest(r.id).catch(console.warn);
+    deleteRequestEverywhere({ requestId: r.id, deleteLocal: deleteRequest });
     toast('Заявка удалена', 'success');
   }
 
   function save() {
-    updateRequest(r.id, { comment, status });
-    if (FB_MODE === 'live') fbUpdateRequest(r.id, { comment, status }).catch(console.warn);
+    updateRequestEverywhere({ requestId: r.id, patch: { comment, status }, updateLocal: updateRequest });
     setEditing(false);
     toast('Заявка обновлена', 'success');
   }

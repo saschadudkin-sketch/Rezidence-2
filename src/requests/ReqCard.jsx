@@ -78,7 +78,7 @@ export function ReqCard({ req, userRole, userName, staggerIdx = 0, onRepeat, onE
   const isActive = isActiveRequest(req);
   const [actLoading, setActLoading] = useState(null);
   const isHighlighted = highlightId === req.id;
-  const [expanded, setExpanded] = useState(isStaffRole && isActive || isHighlighted);
+  const [expanded, setExpanded] = useState((isStaffRole && isActive) || isHighlighted);
   const [confirmDel, setConfirmDel] = useState(false);
   const [showQR,    setShowQR]    = useState(false);
   const cardRef = useRef(null);
