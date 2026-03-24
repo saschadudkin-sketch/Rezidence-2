@@ -10,6 +10,9 @@ function normalizeMode(mode) {
 }
 
 function resolveMode() {
+  // Приоритет: REACT_APP_RUNTIME_MODE -> REACT_APP_MODE -> FEATURES.FIREBASE_LIVE.
+  // Важно: если REACT_APP_RUNTIME_MODE задан, но невалиден, пробуем REACT_APP_MODE,
+  // а не сразу fallback на FEATURES.
   const runtimeMode = normalizeMode(process.env.REACT_APP_RUNTIME_MODE);
   if (runtimeMode) return runtimeMode;
 
