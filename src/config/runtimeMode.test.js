@@ -55,4 +55,11 @@ describe('runtimeMode', () => {
     const runtimeMode = require('./runtimeMode');
     expect(runtimeMode.MODE).toBe('demo');
   });
+
+  test('treats empty env values as unsupported and falls back to demo', () => {
+    process.env.REACT_APP_RUNTIME_MODE = '   ';
+    process.env.REACT_APP_MODE = '';
+    const runtimeMode = require('./runtimeMode');
+    expect(runtimeMode.MODE).toBe('demo');
+  });
 });
