@@ -54,10 +54,29 @@ export const fmtScheduled = (s) => {
   return d.toLocaleDateString('ru-RU', { day: 'numeric', month: 'long' }) + ' в ' + time;
 };
 
+export const toLocalDateInputValue = (date) => {
+  const d = date instanceof Date ? date : new Date(date);
+  const pad2 = (n) => String(n).padStart(2, '0');
+  return `${d.getFullYear()}-${pad2(d.getMonth() + 1)}-${pad2(d.getDate())}`;
+};
+
+export const toLocalDateTimeInputValue = (date) => {
+  const d = date instanceof Date ? date : new Date(date);
+  const pad2 = (n) => String(n).padStart(2, '0');
+  return `${toLocalDateInputValue(d)}T${pad2(d.getHours())}:${pad2(d.getMinutes())}`;
+};
+
+export const parseLocalDateInputValue = (value) => {
+  if (!value) return null;
+  const [year, month, day] = String(value).split('-').map(Number);
+  if (!year || !month || !day) return null;
+  return new Date(year, month - 1, day);
+};
+
 export const minDateTime = () => {
   const d = new Date(Date.now() + 5 * 60_000);
   d.setSeconds(0, 0);
-  return d.toISOString().slice(0, 16);
+  return toLocalDateTimeInputValue(d);
 };
 
 export const SCHEDULE_PRESETS = [
@@ -153,7 +172,7 @@ export function useCreateRequest({ user, type, initialCat, initialData, onClose,
   const applyPreset = (preset) => {
     const d = preset.fn ? preset.fn() : new Date(Date.now() + preset.mins * 60_000);
     d.setSeconds(0, 0);
-    setScheduledFor(d.toISOString().slice(0, 16));
+    setScheduledFor(toLocalDateTimeInputValue(d));
   };
 
   const handleSaveTpl = () => {
@@ -210,7 +229,7 @@ export function useCreateRequest({ user, type, initialCat, initialData, onClose,
       comment:       comment.trim(),
       priority:      'normal',
       passDuration:  type === 'pass' ? (validUntil ? 'temporary' : 'once') : null,
-      validUntil:    type === 'pass' && validUntil ? new Date(validUntil) : null,
+      validUntil:    type === 'pass' && validUntil ? parseLocalDateInputValue(validUntil) : null,
       photo:         null,
       photos:        [],
       status:        isScheduled ? 'scheduled' : 'pending',
