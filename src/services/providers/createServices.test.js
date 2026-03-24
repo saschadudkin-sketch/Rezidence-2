@@ -24,4 +24,15 @@ describe('createServices factory', () => {
     expect(s.mode).toBe('demo');
     expect(s.provider).toBe('demo');
   });
+
+  test('uses MODE from runtimeMode when mode argument is omitted', () => {
+    jest.resetModules();
+    jest.doMock('../../config/runtimeMode', () => ({ MODE: 'live' }));
+
+    const { createServices: createServicesWithMockedMode } = require('./createServices');
+    const s = createServicesWithMockedMode();
+
+    expect(s.mode).toBe('live');
+    expect(s.provider).toBe('firebase');
+  });
 });
