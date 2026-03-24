@@ -1,0 +1,15 @@
+{
+  "files": {
+    "main.css": "/Rezidence-2/static/css/main.163068a1.css",
+    "main.js": "/Rezidence-2/static/js/main.59bb240d.js",
+    "static/js/356.8e94fa71.chunk.js": "/Rezidence-2/static/js/356.8e94fa71.chunk.js",
+    "index.html": "/Rezidence-2/index.html",
+    "main.163068a1.css.map": "/Rezidence-2/static/css/main.163068a1.css.map",
+    "main.59bb240d.js.map": "/Rezidence-2/static/js/main.59bb240d.js.map",
+    "356.8e94fa71.chunk.js.map": "/Rezidence-2/static/js/356.8e94fa71.chunk.js.map"
+  },
+  "entrypoints": [
+    "static/css/main.163068a1.css",
+    "static/js/main.59bb240d.js"
+  ]
+}
