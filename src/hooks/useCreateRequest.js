@@ -3,11 +3,7 @@ import { useActions, usePerms } from '../store/AppStore.jsx';
 import { genId } from '../utils.js';
 import { toast } from '../ui/Toasts';
 import { lockScroll, unlockScroll } from '../ui/scrollLock.js';
-import {
-  FB_MODE,
-  createRequest,
-  uploadRequestPhoto,
-} from '../services/firebaseService';
+import { resolveRequestPhotos, submitRequest } from '../services/requestsGateway';
 
 // ─── Предикаты категорий ─────────────────────────────────────────────────────
 
@@ -224,21 +220,11 @@ export function useCreateRequest({ user, type, initialCat, initialData, onClose,
 
     // Загрузка фото
     if (photos.length > 0) {
-      if (FB_MODE === 'live') {
-        const uploaded = [];
-        for (let i = 0; i < photos.length; i++) {
-          try { uploaded.push(await uploadRequestPhoto(newReq.id + '_' + i, photos[i])); }
-          catch (e) { console.warn(e); uploaded.push(photos[i]); }
-        }
-        newReq.photos = uploaded;
-      } else {
-        newReq.photos = photos;
-      }
+      newReq.photos = await resolveRequestPhotos(newReq.id, photos);
       newReq.photo = newReq.photos[0] || null;
     }
 
-    if (FB_MODE === 'live') createRequest({ ...newReq, id: undefined }).catch(console.warn);
-    addRequest(newReq);
+    submitRequest({ request: newReq, addLocal: addRequest });
     setLoading(false);
 
     const successMsg = isScheduled

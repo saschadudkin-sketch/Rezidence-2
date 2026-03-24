@@ -3,8 +3,7 @@ import { useActions } from '../store/AppStore.jsx';
 import { CAT_ICON, CAT_LABEL } from '../constants/index.js';
 import { toast } from '../ui/Toasts.jsx';
 import { lockScroll, unlockScroll } from '../ui/scrollLock.js';
-
-import { FB_MODE, updateRequest as fbUpdateReq } from '../services/firebaseService';
+import { updateRequestEverywhere } from '../services/requestsGateway';
 
 
 export function EditRequestModal({ req, onClose, onDone }) {
@@ -29,8 +28,7 @@ export function EditRequestModal({ req, onClose, onDone }) {
       carPlate:     carPlate.trim() || null,
       comment:      comment.trim(),
     };
-    updateRequest(req.id, patch);
-    if (FB_MODE === 'live') fbUpdateReq(req.id, patch).catch(console.warn);
+    updateRequestEverywhere({ requestId: req.id, patch, updateLocal: updateRequest });
     setLoading(false);
     toast('Заявка обновлена', 'success');
     onDone(); onClose();
