@@ -4,7 +4,7 @@ import { ROLE_LABELS, S_END } from '../../constants';
 import { genId } from '../../utils';
 import { useDebounce } from '../../hooks/useDebounce';
 import { toast } from '../../ui/Toasts';
-import { FB_MODE, savePerms } from '../../services/firebaseService';
+import { savePermsEverywhere } from '../../services/adminGateway';
 
 // ─── AdminPermsItemRow ────────────────────────────────────────────────────────
 
@@ -25,8 +25,7 @@ function AdminPermsItemRow({ uid, listKey, item, onDel }) {
         x.id === item.id ? { ...x, name: name.trim(), phone, carPlate } : x
       ),
     };
-    setPerms(uid, updated);
-    if (FB_MODE === 'live') savePerms(uid, updated).catch(console.warn);
+    savePermsEverywhere({ uid, perms: updated, saveLocal: setPerms });
     setEditing(false);
     toast('Запись обновлена', 'success');
   }
@@ -84,8 +83,7 @@ function AdminPermsAptGroup({ u, tab }) {
   function addItem() {
     if (!form.name.trim()) { toast('Введите ФИО', 'error'); return; }
     const updated = { ...perms, [tab]: [...list, { id: genId('p'), ...form, name: form.name.trim() }] };
-    setPerms(u.uid, updated);
-    if (FB_MODE === 'live') savePerms(u.uid, updated).catch(console.warn);
+    savePermsEverywhere({ uid: u.uid, perms: updated, saveLocal: setPerms });
     setForm({ name: '', phone: '', carPlate: '' });
     setAdding(false);
     toast('Запись добавлена', 'success');
@@ -93,15 +91,13 @@ function AdminPermsAptGroup({ u, tab }) {
 
   function delItem(id) {
     const updated = { ...perms, [tab]: list.filter(x => x.id !== id) };
-    setPerms(u.uid, updated);
-    if (FB_MODE === 'live') savePerms(u.uid, updated).catch(console.warn);
+    savePermsEverywhere({ uid: u.uid, perms: updated, saveLocal: setPerms });
     toast('Запись удалена', 'success');
   }
 
   function clearAll() {
     const updated = { ...perms, [tab]: [] };
-    setPerms(u.uid, updated);
-    if (FB_MODE === 'live') savePerms(u.uid, updated).catch(console.warn);
+    savePermsEverywhere({ uid: u.uid, perms: updated, saveLocal: setPerms });
     toast('Список очищен', 'success');
   }
 
