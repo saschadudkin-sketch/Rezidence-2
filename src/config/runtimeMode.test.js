@@ -69,4 +69,16 @@ describe('runtimeMode', () => {
     const runtimeMode = require('./runtimeMode');
     expect(runtimeMode.MODE).toBe('demo');
   });
+
+  test.each([
+    [{ runtime: 'live', app: 'demo' }, 'live'],
+    [{ runtime: 'staging', app: 'demo' }, 'demo'],
+    [{ runtime: '', app: 'live' }, 'live'],
+    [{ runtime: undefined, app: '  LiVe ' }, 'live'],
+  ])('resolves mode matrix %#', (input, expectedMode) => {
+    if (input.runtime !== undefined) process.env.REACT_APP_RUNTIME_MODE = input.runtime;
+    if (input.app !== undefined) process.env.REACT_APP_MODE = input.app;
+    const runtimeMode = require('./runtimeMode');
+    expect(runtimeMode.MODE).toBe(expectedMode);
+  });
 });
