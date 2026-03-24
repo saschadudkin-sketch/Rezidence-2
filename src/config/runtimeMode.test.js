@@ -1,5 +1,6 @@
 describe('runtimeMode', () => {
   const originalEnv = process.env;
+  const loadRuntimeMode = () => require('./runtimeMode');
 
   beforeEach(() => {
     jest.resetModules();
@@ -13,7 +14,7 @@ describe('runtimeMode', () => {
   });
 
   test('defaults to demo when no env override is provided', () => {
-    const runtimeMode = require('./runtimeMode');
+    const runtimeMode = loadRuntimeMode();
     expect(runtimeMode.MODE).toBe('demo');
     expect(runtimeMode.isDemoMode()).toBe(true);
     expect(runtimeMode.isLiveMode()).toBe(false);
@@ -21,52 +22,52 @@ describe('runtimeMode', () => {
 
   test('uses REACT_APP_RUNTIME_MODE when provided', () => {
     process.env.REACT_APP_RUNTIME_MODE = 'live';
-    const runtimeMode = require('./runtimeMode');
+    const runtimeMode = loadRuntimeMode();
     expect(runtimeMode.MODE).toBe('live');
   });
 
   test('falls back to REACT_APP_MODE when REACT_APP_RUNTIME_MODE is absent', () => {
     process.env.REACT_APP_MODE = 'live';
-    const runtimeMode = require('./runtimeMode');
+    const runtimeMode = loadRuntimeMode();
     expect(runtimeMode.MODE).toBe('live');
   });
 
   test('REACT_APP_RUNTIME_MODE has priority over REACT_APP_MODE', () => {
     process.env.REACT_APP_RUNTIME_MODE = 'demo';
     process.env.REACT_APP_MODE = 'live';
-    const runtimeMode = require('./runtimeMode');
+    const runtimeMode = loadRuntimeMode();
     expect(runtimeMode.MODE).toBe('demo');
   });
 
   test('falls back to REACT_APP_MODE when REACT_APP_RUNTIME_MODE is invalid', () => {
     process.env.REACT_APP_RUNTIME_MODE = 'staging';
     process.env.REACT_APP_MODE = 'live';
-    const runtimeMode = require('./runtimeMode');
+    const runtimeMode = loadRuntimeMode();
     expect(runtimeMode.MODE).toBe('live');
   });
 
   test('normalizes env values (trim + lowercase)', () => {
     process.env.REACT_APP_RUNTIME_MODE = '  LIVE  ';
-    const runtimeMode = require('./runtimeMode');
+    const runtimeMode = loadRuntimeMode();
     expect(runtimeMode.MODE).toBe('live');
   });
 
   test('normalizes REACT_APP_MODE when runtime mode is absent', () => {
     process.env.REACT_APP_MODE = '  DeMo ';
-    const runtimeMode = require('./runtimeMode');
+    const runtimeMode = loadRuntimeMode();
     expect(runtimeMode.MODE).toBe('demo');
   });
 
   test('ignores unsupported mode values', () => {
     process.env.REACT_APP_RUNTIME_MODE = 'staging';
-    const runtimeMode = require('./runtimeMode');
+    const runtimeMode = loadRuntimeMode();
     expect(runtimeMode.MODE).toBe('demo');
   });
 
   test('treats empty env values as unsupported and falls back to demo', () => {
     process.env.REACT_APP_RUNTIME_MODE = '   ';
     process.env.REACT_APP_MODE = '';
-    const runtimeMode = require('./runtimeMode');
+    const runtimeMode = loadRuntimeMode();
     expect(runtimeMode.MODE).toBe('demo');
   });
 
@@ -78,7 +79,7 @@ describe('runtimeMode', () => {
   ])('resolves mode matrix %#', (input, expectedMode) => {
     if (input.runtime !== undefined) process.env.REACT_APP_RUNTIME_MODE = input.runtime;
     if (input.app !== undefined) process.env.REACT_APP_MODE = input.app;
-    const runtimeMode = require('./runtimeMode');
+    const runtimeMode = loadRuntimeMode();
     expect(runtimeMode.MODE).toBe(expectedMode);
   });
 });
